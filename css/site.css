@@ -728,12 +728,10 @@ body.menu-open .menu {
   color: var(--c-accent);
 }
 
-/* A live map, toned into the paper palette so it reads as a framed print:
-   matted inside a hairline frame, edge-vignetted and labelled. It warms up on
-   hover. The filter transition runs only on hover, never during scroll, so it
-   does not violate the frame-cost rules above. Over the map the custom cursor
-   is hidden and the real system cursor returns, so it never freezes on the
-   iframe and the map stays fully interactive. */
+/* A live, full-colour map framed as a print: matted inside a hairline frame,
+   edge-vignetted and labelled. Over the map the custom cursor is hidden and
+   the real system cursor returns, so it never freezes on the iframe and the
+   map stays fully interactive. */
 .map-frame {
   position: relative;
   overflow: hidden;
@@ -748,11 +746,6 @@ body.menu-open .menu {
   width: 100%;
   height: 100%;
   border: 0;
-  filter: grayscale(1) sepia(0.26) contrast(0.9) brightness(1.06);
-  transition: filter 1.1s var(--e-out);
-}
-.map-frame:hover iframe {
-  filter: grayscale(0.45) sepia(0.1) contrast(0.97) brightness(1.02);
 }
 body.has-cursor .map-frame,
 body.has-cursor .map-frame * {
