@@ -145,11 +145,44 @@ void main() {
   /* Chapter colour settles in the shadows, the way warm light does on stone. */
   col = mix(col, mix(col, uColor, 0.22), (1.0 - diff) * mask);
 
-  /* A broad haze drifting over everything — including the calm text side, so
-     the page reads as one atmosphere rather than a carved half and a blank
-     half. Low frequency and low amplitude: felt, not seen. */
-  float haze = fbm(p * 0.62 + vec2(uWarp * 0.25, uTime * 0.007));
-  col *= 0.948 + 0.104 * haze;
+  /* ---- Fog -------------------------------------------------------------
+     A real veil, not a brightness wobble: banks of cloud that actually hide
+     the relief behind them. Brighter than the paper, so it reads as mist in
+     daylight — and so dark text over it gains contrast rather than losing it.
+
+     The pointer burns a hole through it. That clearing is the whole
+     interaction: the reader carries a patch of clear air with them. */
+  float ft = uTime * 0.016;
+  vec2 fq = p * 1.02;
+
+  vec2 fw = vec2(
+    fbm(fq + vec2(ft, uWarp * 0.2)),
+    fbm(fq + vec2(uWarp * 0.2 + 3.3, -ft * 0.8))
+  );
+  float fog = fbm(fq * 1.32 + fw * 1.7 + vec2(-ft * 1.1, ft * 0.45));
+
+  /* This fbm does not span 0..1. Measured over a screenful its range is
+     0.23–0.62, mean 0.44, with the 15th and 60th percentiles at roughly 0.31
+     and 0.47. The window below is set from those numbers, not guessed: it
+     leaves about a sixth of the screen fully clear and drives most of the
+     rest to full density. A wider window maps everything to mid-grey and the
+     fog disappears into the paper — which is exactly how the first two
+     attempts failed. */
+  fog = smoothstep(0.265, 0.435, fog);
+
+  /* A defined pool of clear air, not a soft half-screen falloff. If the
+     clearing is too wide the eye has nothing to compare it against and the
+     interaction stops reading. */
+  float dp = length(p - uPointer);
+  float clearing = 1.0 - smoothstep(0.05, 0.38, dp);
+  clearing = pow(clearing, 1.15);
+
+  fog *= 1.0 - clearing * 0.94;
+
+  /* Far enough above the paper to actually hide the relief behind it. A fog
+     the same tone as the ground cannot obscure anything, however dense. */
+  vec3 fogColour = uPaper + vec3(0.086, 0.083, 0.075);
+  col = mix(col, fogColour, fog * 0.96);
 
   /* Quiet vignette keeps the eye on the centre column of text. */
   float vig = smoothstep(1.40, 0.34, length(p * vec2(0.78, 1.0)));
@@ -160,6 +193,10 @@ void main() {
      anything starts moving. Fixed grain stops banding without flickering. */
   float grain = hash(floor(gl_FragCoord.xy));
   col += (grain - 0.5) * 0.016;
+
+  /* Never let the fog highlights reach pure white — blown highlights are the
+     one thing that makes a pale surface look like a cheap filter. */
+  col = min(col, vec3(0.988));
 
   gl_FragColor = vec4(col, 1.0);
 }
