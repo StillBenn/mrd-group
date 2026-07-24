@@ -88,43 +88,70 @@ float fbm(vec2 p) {
   return v;
 }
 
-/* Ridged fractal noise, six octaves. Folding each octave around its midpoint
-   turns smooth blobs into creases and crests — the shapes a chisel leaves.
-   Six is what gives the surface detail you can actually look into; three
-   reads as a blurred cushion. */
-float ridged(vec2 p) {
+/* --------------------------------------------------------------------------
+   The carved medallion.
+
+   Built from exact analytic functions, not from noise. Noise can only ever
+   produce a shapeless crust — four attempts here proved that. A relief reads
+   as carved because it is DELIBERATE: symmetry you can count, edges that
+   close, a centre the eye can find.
+
+   The motif is a rosette: an outer band, twelve radiating flutes, a six-point
+   star and a raised boss. Twelve and six because the group is three sectors —
+   the ornament is divisible by its own story rather than arbitrary.
+   -------------------------------------------------------------------------- */
+
+/* Local coordinates: centred on the object and scaled so its rim sits at 1.0. */
+vec2 local(vec2 p) {
+  vec2 d = (p - uAt) / uSize;
+  float s = sin(uWarp * 0.10);
+  float c = cos(uWarp * 0.10);
+  return mat2(c, -s, s, c) * d;
+}
+
+float ornament(vec2 q) {
+  float r = length(q);
+  float a = atan(q.y, q.x);
   float h = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 6; i++) {
-    float n = noise(p);
-    n = 1.0 - abs(n * 2.0 - 1.0);
-    h += a * n * n;
-    p = p * 2.11 + vec2(2.3, 4.7);
-    a *= 0.52;
-  }
+
+  /* Outer band — a bevelled annulus that closes the shape. */
+  h += smoothstep(0.075, 0.010, abs(r - 0.90)) * 0.62;
+
+  /* Twelve radiating flutes between the band and the star. The exponent
+     narrows each crest into a ridge — a wide cosine reads as a cushion, a
+     narrow one reads as a chisel cut. */
+  float flutes = 0.5 + 0.5 * cos(a * 12.0);
+  flutes = pow(flutes, 2.4);
+  float fenv = smoothstep(0.36, 0.42, r) * smoothstep(0.88, 0.80, r);
+  h += flutes * fenv * 0.95;
+
+  /* Six-point star at the heart. */
+  float starEdge = 0.30 + 0.11 * cos(a * 6.0);
+  h += smoothstep(starEdge, starEdge - 0.035, r) * 0.72;
+
+  /* Raised centre boss. */
+  h += smoothstep(0.135, 0.055, r) * 0.55;
+
+  /* A fine turned texture across the whole face, like a lathe leaves. This
+     is what the eye reads as "worked surface" up close. */
+  h += 0.085 * (0.5 + 0.5 * cos(r * 96.0)) * smoothstep(1.0, 0.15, r);
+
+  /* Hairline incised rings framing the flutes. */
+  h -= smoothstep(0.012, 0.0, abs(r - 0.36)) * 0.16;
+  h -= smoothstep(0.012, 0.0, abs(r - 0.79)) * 0.16;
+
   return h;
 }
 
-/* The carved surface, warped so the ridges flow instead of running straight. */
 float field(vec2 p) {
-  vec2 w = vec2(
-    noise(p * 1.1 + vec2(uWarp, uTime * 0.008)),
-    noise(p * 1.1 + vec2(uTime * 0.006, uWarp + 5.2))
-  );
-  return ridged(p * 3.1 + (w - 0.5) * 1.6 + vec2(uWarp, 0.0));
+  return ornament(local(p));
 }
 
-/* The object's outline. Perturbing the radius by angle gives an organic
-   silhouette rather than a circle — the edge is the whole point, so it has
-   to look grown, not drawn with a compass. */
+/* The outline. A medallion closes on itself, so the silhouette is its rim —
+   a shape the eye can read all the way round. */
 float silhouette(vec2 p) {
-  vec2 d = p - uAt;
-  d.y *= 1.12;
-  float r = length(d);
-  float a = atan(d.y, d.x);
-  float lobes = fbm(vec2(cos(a), sin(a)) * 1.7 + vec2(uWarp * 0.11, 0.0));
-  float edge = uSize * (0.62 + lobes * 0.95);
-  return 1.0 - smoothstep(edge * 0.80, edge, r);
+  float r = length(local(p));
+  return 1.0 - smoothstep(0.95, 1.0, r);
 }
 
 void main() {
