@@ -1,0 +1,102 @@
+/* ==========================================================================
+   MRD Group — Design tokens
+   --------------------------------------------------------------------------
+   Direction: paper, not screen. A light warm ground, near-black ink, a serif
+   display face and restrained type sizes. Premium here comes from space,
+   typography and slowness — not from effects.
+
+   Single source of truth: no file below this one may hard-code a raw value.
+   ========================================================================== */
+
+:root {
+  /* --- Ground ---------------------------------------------------------- */
+  --c-paper: #e9e7e2;
+  --c-paper-2: #e2dfd8; /* alternating band */
+  --c-paper-3: #d8d4cb; /* insets, media wells */
+  --c-ink-inverse: #12120f; /* the one dark band (footer) */
+
+  /* --- Ink ------------------------------------------------------------- */
+  --c-ink: #12120f;
+  --c-ink-dim: #55544c;
+  --c-ink-faint: #8b8981;
+  --c-line: rgba(18, 18, 15, 0.14);
+  --c-line-soft: rgba(18, 18, 15, 0.08);
+
+  /* --- Accents ---------------------------------------------------------
+     Used sparingly: rules, indices, hover states. Never as a fill.        */
+  --c-brand: #8a5f2b; /* aged bronze — the holding */
+  --c-market: #2e6244; /* deep green */
+  --c-insaat: #9c4f26; /* burnt sienna */
+  --c-petrol: #26456b; /* deep navy */
+
+  /* Set per page via <body data-sector="market|insaat|petrol"> */
+  --c-accent: var(--c-brand);
+
+  /* --- Type ------------------------------------------------------------ */
+  --f-display: "Newsreader", "Times New Roman", Georgia, serif;
+  --f-body: "Inter", "Segoe UI", system-ui, sans-serif;
+
+  /* Restrained scale. The hero is the only oversized element on a page. */
+  --t-hero: clamp(2.6rem, 7.2vw, 6.5rem);
+  --t-h1: clamp(2rem, 4.6vw, 3.75rem);
+  --t-h2: clamp(1.6rem, 3vw, 2.5rem);
+  --t-h3: clamp(1.15rem, 1.6vw, 1.4rem);
+  --t-lead: clamp(1.0625rem, 1.4vw, 1.3125rem);
+  --t-body: clamp(0.9375rem, 1vw, 1.0625rem);
+  --t-small: 0.875rem;
+  --t-label: 0.6875rem;
+
+  --lh-display: 1.06;
+  --lh-snug: 1.2;
+  --lh-normal: 1.7;
+  --ls-label: 0.16em;
+  --ls-display: -0.022em;
+
+  /* --- Space -----------------------------------------------------------
+     Generous by default. Whitespace is the main premium signal here.      */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4.5rem;
+  --s-9: 7rem;
+  --s-10: 10rem;
+  --s-section: clamp(6rem, 14vh, 11rem);
+
+  /* --- Layout ---------------------------------------------------------- */
+  --w-max: 84rem;
+  --w-text: 36rem;
+  --gutter: clamp(1.25rem, 5.5vw, 5rem);
+  --header-h: 5.25rem;
+  --radius: 1px;
+
+  /* --- Motion ----------------------------------------------------------
+     Long and quiet. Nothing on this site snaps.                          */
+  --e-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --e-in-out: cubic-bezier(0.62, 0.01, 0.34, 1);
+  --d-fast: 0.3s;
+  --d-base: 0.7s;
+  --d-slow: 1.2s;
+  --d-reveal: 1.5s;
+
+  /* --- Layers ---------------------------------------------------------- */
+  --z-canvas: 0;
+  --z-content: 10;
+  --z-header: 100;
+  --z-menu: 200;
+  --z-cursor: 900;
+  --z-loader: 1000;
+}
+
+body[data-sector="market"] {
+  --c-accent: var(--c-market);
+}
+body[data-sector="insaat"] {
+  --c-accent: var(--c-insaat);
+}
+body[data-sector="petrol"] {
+  --c-accent: var(--c-petrol);
+}

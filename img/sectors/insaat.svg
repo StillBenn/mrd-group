@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="İnşaat ve taahhüt — teknik çizim, geçici görsel">
+  <rect width="800" height="1000" fill="#d8d4cb"/>
+  <g stroke="#12120f" stroke-opacity=".10" stroke-width="1">
+    <path d="M0 60h800M0 120h800M0 180h800M0 240h800M0 300h800M0 360h800M0 420h800M0 480h800M0 540h800M0 600h800M0 660h800M0 720h800M0 780h800M0 840h800M0 900h800M0 960h800"/>
+    <path d="M60 0v1000M180 0v1000M300 0v1000M420 0v1000M540 0v1000M660 0v1000M780 0v1000"/>
+  </g>
+
+  <!-- ground line -->
+  <g stroke="#12120f" stroke-opacity=".55" stroke-width="1.5">
+    <path d="M40 900h720"/>
+  </g>
+  <g stroke="#12120f" stroke-opacity=".3" stroke-width="1">
+    <path d="M40 912l24-24M88 912l24-24M136 912l24-24M184 912l24-24M232 912l24-24M280 912l24-24M328 912l24-24M376 912l24-24M424 912l24-24M472 912l24-24M520 912l24-24M568 912l24-24M616 912l24-24M664 912l24-24M712 912l24-24"/>
+  </g>
+
+  <!-- main tower elevation -->
+  <g fill="#9c4f26" fill-opacity=".14" stroke="#9c4f26" stroke-opacity=".6" stroke-width="1.4">
+    <rect x="300" y="230" width="216" height="670"/>
+  </g>
+  <g stroke="#12120f" stroke-opacity=".38" stroke-width="1" fill="none">
+    <path d="M300 300h216M300 370h216M300 440h216M300 510h216M300 580h216M300 650h216M300 720h216M300 790h216M300 860h216"/>
+    <path d="M354 230v670M408 230v670M462 230v670"/>
+  </g>
+
+  <!-- flanking blocks -->
+  <g fill="#9c4f26" fill-opacity=".08" stroke="#9c4f26" stroke-opacity=".42" stroke-width="1.2">
+    <rect x="120" y="520" width="150" height="380"/>
+    <rect x="546" y="440" width="164" height="460"/>
+  </g>
+  <g stroke="#12120f" stroke-opacity=".26" stroke-width="1" fill="none">
+    <path d="M120 596h150M120 672h150M120 748h150M120 824h150M195 520v380"/>
+    <path d="M546 516h164M546 592h164M546 668h164M546 744h164M546 820h164M628 440v460"/>
+  </g>
+
+  <!-- crane -->
+  <g stroke="#12120f" stroke-opacity=".5" stroke-width="1.5" fill="none">
+    <path d="M408 230V96M180 118h420M408 96l-56 22M408 96l56 22"/>
+    <path d="M540 118v54M300 118v34"/>
+  </g>
+  <g stroke="#12120f" stroke-opacity=".3" stroke-width="1">
+    <path d="M200 118l40-22M240 118l40-22M280 118l40-22M320 118l40-22M440 118l40-22M480 118l40-22M520 118l40-22M560 118l40-22"/>
+  </g>
+
+  <g fill="#12120f" fill-opacity=".45" font-family="Georgia, serif" font-size="17" letter-spacing="1">
+    <text x="120" y="964">KONUT — TİCARİ — TAAHHÜT</text>
+  </g>
+</svg>

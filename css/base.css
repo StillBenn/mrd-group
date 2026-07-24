@@ -1,0 +1,238 @@
+/* ==========================================================================
+   MRD Group — Fonts, reset, typography, layout primitives
+   ========================================================================== */
+
+/* --- Self-hosted fonts ---------------------------------------------------
+   Served from the repo, not a CDN: the site must render identically on a
+   locked-down corporate network and offline. latin-ext carries the Turkish
+   glyphs (ğ ş ı İ), so both subsets load for Turkish copy.                */
+@font-face {
+  font-family: "Newsreader";
+  src: url("../fonts/newsreader-latin-ext.woff2") format("woff2");
+  font-weight: 300 600;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Newsreader";
+  src: url("../fonts/newsreader-latin.woff2") format("woff2");
+  font-weight: 300 600;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("../fonts/inter-latin-ext.woff2") format("woff2");
+  font-weight: 400 600;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("../fonts/inter-latin.woff2") format("woff2");
+  font-weight: 400 600;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* --- Reset ------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* `overflow-x: hidden` on the body turns it into a scroll container, which
+   fights the smooth-scroll library for ownership of the wheel. `clip` stops
+   horizontal overflow without creating one. */
+html,
+body {
+  overflow-x: clip;
+}
+
+body {
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: var(--f-body);
+  font-size: var(--t-body);
+  line-height: var(--lh-normal);
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+svg,
+video,
+iframe {
+  display: block;
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+::selection {
+  background: var(--c-ink);
+  color: var(--c-paper);
+}
+
+/* --- Typography --------------------------------------------------------
+   Display type is serif, set light and tight. Body type is sans, set
+   comfortably. The contrast between the two carries the whole identity.  */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-display);
+  text-wrap: balance;
+}
+
+.t-hero {
+  font-size: var(--t-hero);
+  line-height: var(--lh-display);
+}
+.t-h1 {
+  font-size: var(--t-h1);
+}
+.t-h2 {
+  font-size: var(--t-h2);
+}
+.t-h3 {
+  font-size: var(--t-h3);
+  letter-spacing: -0.01em;
+}
+
+.t-lead {
+  font-size: var(--t-lead);
+  line-height: 1.55;
+  color: var(--c-ink-dim);
+  max-width: var(--w-text);
+}
+
+.t-label {
+  font-family: var(--f-body);
+  font-size: var(--t-label);
+  font-weight: 500;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--c-ink-faint);
+}
+
+.t-label--accent {
+  color: var(--c-accent);
+}
+
+p {
+  max-width: var(--w-text);
+  color: var(--c-ink-dim);
+}
+
+strong {
+  color: var(--c-ink);
+  font-weight: 600;
+}
+
+/* --- Layout primitives -------------------------------------------------- */
+.wrap {
+  width: 100%;
+  max-width: var(--w-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.section {
+  position: relative;
+  padding-block: var(--s-section);
+  z-index: var(--z-content);
+}
+
+.stack > * + * {
+  margin-top: var(--s-4);
+}
+.stack-lg > * + * {
+  margin-top: var(--s-6);
+}
+
+/* --- Accessibility ------------------------------------------------------ */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: var(--s-3);
+  left: var(--s-3);
+  z-index: var(--z-loader);
+  padding: var(--s-3) var(--s-5);
+  background: var(--c-ink);
+  color: var(--c-paper);
+  font-weight: 500;
+  transform: translateY(-200%);
+  transition: transform var(--d-fast) var(--e-out);
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 3px;
+}
+
+/* --- Motion preference --------------------------------------------------
+   Everything animated degrades to its final state. The site must be fully
+   readable and navigable with zero motion.                                */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

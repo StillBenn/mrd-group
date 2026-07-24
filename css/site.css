@@ -1,0 +1,946 @@
+/* ==========================================================================
+   MRD Group — Components
+   --------------------------------------------------------------------------
+   Performance rules enforced throughout this file:
+     · no backdrop-filter  — it repaints on every scroll frame
+     · no mix-blend-mode   — forces an extra compositing pass
+     · no filter transitions on large images
+   Animation is limited to transform, opacity and clip-path, which the
+   compositor can handle without touching layout or paint.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Loader — quiet, paper-coloured, shows real progress.
+   -------------------------------------------------------------------------- */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-loader);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--s-5);
+  background: var(--c-paper);
+  transition: opacity var(--d-slow) var(--e-out),
+    visibility var(--d-slow) var(--e-out);
+}
+.loader.is-done {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.loader__mark {
+  font-family: var(--f-display);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--c-ink);
+}
+.loader__bar {
+  width: min(42vw, 13rem);
+  height: 1px;
+  background: var(--c-line);
+  overflow: hidden;
+}
+.loader__fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--c-ink);
+  transition: width 0.35s linear;
+}
+.loader__pct {
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  color: var(--c-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   2. Cursor — a single ink dot, positioned straight from the pointer event.
+      No trailing ring: anything that lags behind the hand reads as lag.
+   -------------------------------------------------------------------------- */
+/* The wrapper carries the pointer position, the dot carries the hover scale,
+   so the two transforms never overwrite one another. */
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-cursor);
+  pointer-events: none;
+  display: none;
+  will-change: transform;
+}
+.cursor__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--c-ink);
+  transition: transform var(--d-fast) var(--e-out),
+    background-color var(--d-fast) var(--e-out);
+}
+.cursor.is-hover .cursor__dot {
+  transform: scale(2.4);
+  background: var(--c-accent);
+}
+/* The footer is the same near-black as the dot, so the dot would vanish
+   there. Over dark regions it flips to paper. */
+.cursor.is-inverse .cursor__dot {
+  background: var(--c-paper);
+}
+.cursor.is-inverse.is-hover .cursor__dot {
+  background: var(--c-paper);
+}
+@media (hover: hover) and (pointer: fine) {
+  body.has-cursor .cursor {
+    display: block;
+  }
+  body.has-cursor,
+  body.has-cursor a,
+  body.has-cursor button {
+    cursor: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. Canvas stage — a single full-screen shader behind the page.
+      It renders paper grain and a slow light wash. There is no geometry:
+      one draw call, no per-frame JavaScript work, so it cannot compete
+      with the scroll for main-thread time.
+   -------------------------------------------------------------------------- */
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-canvas);
+  pointer-events: none;
+}
+.stage canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* Painted when WebGL is unavailable or reduced-motion is on. */
+.stage--fallback {
+  background: radial-gradient(
+      110% 70% at 78% 8%,
+      rgba(138, 95, 43, 0.09),
+      transparent 62%
+    ),
+    radial-gradient(90% 60% at 8% 92%, rgba(38, 69, 107, 0.07), transparent 60%);
+}
+
+.page {
+  position: relative;
+  z-index: var(--z-content);
+}
+
+/* --------------------------------------------------------------------------
+   4. Header & navigation
+   -------------------------------------------------------------------------- */
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--header-h);
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid transparent;
+  transition: height var(--d-base) var(--e-out),
+    background-color var(--d-base) var(--e-out),
+    border-color var(--d-base) var(--e-out);
+}
+/* Solid paper rather than a blur: no per-frame repaint while scrolling. */
+.site-header.is-stuck {
+  height: 3.875rem;
+  background: var(--c-paper);
+  border-bottom-color: var(--c-line);
+}
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  width: 100%;
+  max-width: var(--w-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  font-family: var(--f-display);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.brand__rule {
+  display: inline-block;
+  width: 1.75rem;
+  height: 1px;
+  background: var(--c-accent);
+  transform: translateY(-0.35em);
+  transition: width var(--d-base) var(--e-out);
+}
+.brand:hover .brand__rule {
+  width: 2.75rem;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(var(--s-4), 2.2vw, var(--s-7));
+}
+.nav__link {
+  position: relative;
+  font-size: var(--t-small);
+  color: var(--c-ink-dim);
+  padding-block: var(--s-2);
+  transition: color var(--d-fast) var(--e-out);
+}
+.nav__link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0.35em;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--d-base) var(--e-out);
+}
+.nav__link:hover {
+  color: var(--c-ink);
+}
+.nav__link[aria-current="page"] {
+  color: var(--c-accent);
+}
+.nav__link:hover::after,
+.nav__link[aria-current="page"]::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.menu-toggle {
+  display: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-content: center;
+  gap: 6px;
+  margin-right: calc(var(--s-3) * -1);
+}
+.menu-toggle span {
+  display: block;
+  width: 21px;
+  height: 1px;
+  background: var(--c-ink);
+  transition: transform var(--d-base) var(--e-out),
+    opacity var(--d-fast) var(--e-out);
+}
+body.menu-open .menu-toggle span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+body.menu-open .menu-toggle span:nth-child(2) {
+  opacity: 0;
+}
+body.menu-open .menu-toggle span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-menu);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: var(--s-9) var(--gutter);
+  background: var(--c-paper);
+  transform: translateY(-100%);
+  visibility: hidden;
+  transition: transform var(--d-slow) var(--e-in-out), visibility var(--d-slow);
+}
+body.menu-open .menu {
+  transform: translateY(0);
+  visibility: visible;
+}
+.menu__link {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-4);
+  font-family: var(--f-display);
+  font-size: clamp(2rem, 9vw, 3rem);
+  font-weight: 400;
+  letter-spacing: var(--ls-display);
+  padding-block: var(--s-4);
+  border-bottom: 1px solid var(--c-line);
+}
+.menu__link span {
+  font-family: var(--f-body);
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  color: var(--c-ink-faint);
+}
+.menu__foot {
+  margin-top: var(--s-7);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+}
+
+@media (max-width: 900px) {
+  .nav {
+    display: none;
+  }
+  .menu-toggle {
+    display: grid;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Hero — word-stacked serif, one line per line. Nothing else competes.
+   -------------------------------------------------------------------------- */
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: flex-end;
+  padding-top: calc(var(--header-h) + var(--s-8));
+  padding-bottom: var(--s-8);
+}
+.hero__inner {
+  width: 100%;
+  max-width: var(--w-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  margin-bottom: var(--s-7);
+}
+.hero__eyebrow::before {
+  content: "";
+  width: clamp(2rem, 6vw, 5rem);
+  height: 1px;
+  background: var(--c-accent);
+}
+.hero__title {
+  font-size: var(--t-hero);
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+  font-weight: 400;
+}
+.hero__title .accent {
+  color: var(--c-accent);
+}
+.hero__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-6);
+  margin-top: var(--s-8);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--c-line);
+}
+.hero__lead {
+  max-width: 30rem;
+}
+
+.scroll-cue {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--c-ink-faint);
+}
+.scroll-cue__rail {
+  width: 1px;
+  height: 2.75rem;
+  background: var(--c-line);
+  position: relative;
+  overflow: hidden;
+}
+.scroll-cue__rail::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 45%;
+  background: var(--c-accent);
+  animation: cue 2.8s var(--e-in-out) infinite;
+}
+@keyframes cue {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(230%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue__rail::after {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. Section furniture
+   -------------------------------------------------------------------------- */
+.section--band {
+  background: var(--c-paper-2);
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-8);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--c-line);
+}
+
+/* Manifesto — a single serif statement, generous around it. */
+.manifesto__grid {
+  display: grid;
+  gap: var(--s-8);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .manifesto__grid {
+    grid-template-columns: 1.3fr 1fr;
+    gap: var(--s-10);
+  }
+}
+.manifesto__text {
+  font-family: var(--f-display);
+  font-size: clamp(1.6rem, 3.4vw, 2.9rem);
+  line-height: 1.2;
+  letter-spacing: var(--ls-display);
+  color: var(--c-ink);
+  max-width: 24ch;
+}
+.manifesto__text .accent {
+  color: var(--c-accent);
+}
+.manifesto__side {
+  max-width: 25rem;
+  padding-top: var(--s-2);
+}
+
+/* Facts — hairline rules only. No boxes, no invented numbers. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--s-6) var(--s-7);
+  margin-top: var(--s-9);
+  padding-top: var(--s-6);
+  border-top: 1px solid var(--c-line);
+}
+.fact__value {
+  font-family: var(--f-display);
+  font-size: clamp(2.25rem, 4vw, 3.25rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: var(--ls-display);
+  color: var(--c-ink);
+}
+.fact__label {
+  margin-top: var(--s-3);
+  font-size: var(--t-small);
+  color: var(--c-ink-faint);
+}
+
+/* --------------------------------------------------------------------------
+   7. Sector rows — editorial spreads, not cards.
+   -------------------------------------------------------------------------- */
+.sector {
+  position: relative;
+  padding-block: var(--s-section);
+  border-top: 1px solid var(--c-line);
+}
+.sector__inner {
+  display: grid;
+  gap: var(--s-8);
+  align-items: center;
+}
+@media (min-width: 960px) {
+  .sector__inner {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-10);
+  }
+  .sector--flip .sector__media {
+    order: -1;
+  }
+}
+
+.sector__index {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--sector-accent, var(--c-accent));
+}
+.sector__index::after {
+  content: "";
+  flex: 1;
+  max-width: 4rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.4;
+}
+.sector__title {
+  font-size: var(--t-h1);
+  font-weight: 400;
+  letter-spacing: var(--ls-display);
+  margin-block: var(--s-5) var(--s-5);
+}
+.sector__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-3);
+  margin-block: var(--s-6);
+  font-size: var(--t-small);
+  color: var(--c-ink-faint);
+}
+.sector__list li:not(:last-child)::after {
+  content: "/";
+  margin-left: var(--s-3);
+  color: var(--c-line);
+}
+
+/* Media well — clip-path reveal, no filters, no blend modes. */
+.sector__media {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  background: var(--c-paper-3);
+}
+.sector__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.reveal-media {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path var(--d-reveal) var(--e-in-out);
+}
+.reveal-media img {
+  transform: scale(1.08);
+  transition: transform 2s var(--e-out);
+}
+.reveal-media.is-in {
+  clip-path: inset(0 0 0 0);
+}
+.reveal-media.is-in img {
+  transform: scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-media {
+    clip-path: none;
+  }
+  .reveal-media img {
+    transform: none;
+  }
+}
+
+.sector--market {
+  --sector-accent: var(--c-market);
+}
+.sector--insaat {
+  --sector-accent: var(--c-insaat);
+}
+.sector--petrol {
+  --sector-accent: var(--c-petrol);
+}
+
+/* --------------------------------------------------------------------------
+   8. Links & buttons — understated, rule-based.
+   -------------------------------------------------------------------------- */
+.link-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--t-small);
+  color: var(--sector-accent, var(--c-accent));
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid currentColor;
+}
+.link-arrow svg {
+  width: 15px;
+  height: 15px;
+  transition: transform var(--d-base) var(--e-out);
+}
+.link-arrow:hover svg {
+  transform: translateX(6px);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 1rem 1.75rem;
+  font-size: var(--t-small);
+  color: var(--c-paper);
+  background: var(--c-ink);
+  border: 1px solid var(--c-ink);
+  border-radius: var(--radius);
+  transition: color var(--d-base) var(--e-out),
+    background-color var(--d-base) var(--e-out);
+}
+.btn:hover {
+  color: var(--c-ink);
+  background: transparent;
+}
+.btn svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.btn--ghost {
+  color: var(--c-ink);
+  background: transparent;
+  border-color: var(--c-line);
+}
+.btn--ghost:hover {
+  color: var(--c-paper);
+  background: var(--c-ink);
+  border-color: var(--c-ink);
+}
+
+/* Every button in a contact row carries the same weight. One filled button
+   sitting beside outlined ones reads as an inconsistency, not as hierarchy —
+   and it behaves differently on hover, which is worse. */
+.contact-actions .btn {
+  color: var(--c-ink);
+  background: transparent;
+  border-color: var(--c-line);
+}
+.contact-actions .btn:hover {
+  color: var(--c-paper);
+  background: var(--c-ink);
+  border-color: var(--c-ink);
+}
+
+/* --------------------------------------------------------------------------
+   9. Approach — a numbered editorial list, not a grid of cards.
+   -------------------------------------------------------------------------- */
+.approach {
+  border-top: 1px solid var(--c-line);
+}
+.approach__item {
+  display: grid;
+  gap: var(--s-3) var(--s-7);
+  padding-block: var(--s-7);
+  border-bottom: 1px solid var(--c-line);
+}
+@media (min-width: 800px) {
+  .approach__item {
+    grid-template-columns: 4rem 16rem 1fr;
+    align-items: baseline;
+  }
+}
+.approach__no {
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  color: var(--c-accent);
+}
+.approach__item h3 {
+  font-size: var(--t-h3);
+  font-weight: 400;
+}
+.approach__item p {
+  max-width: 34rem;
+}
+
+/* --------------------------------------------------------------------------
+   10. Contact
+   -------------------------------------------------------------------------- */
+.contact-band__title {
+  font-size: var(--t-h1);
+  font-weight: 400;
+  letter-spacing: var(--ls-display);
+  max-width: 20ch;
+}
+.contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  margin-top: var(--s-7);
+}
+
+.detail-list {
+  border-top: 1px solid var(--c-line);
+}
+.detail-list > div {
+  display: grid;
+  gap: var(--s-2);
+  padding-block: var(--s-5);
+  border-bottom: 1px solid var(--c-line);
+}
+@media (min-width: 700px) {
+  .detail-list > div {
+    grid-template-columns: 11rem 1fr;
+    align-items: baseline;
+    gap: var(--s-5);
+  }
+}
+.detail-list dt {
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--c-ink-faint);
+}
+.detail-list dd {
+  font-family: var(--f-display);
+  font-size: var(--t-lead);
+  color: var(--c-ink);
+}
+.detail-list dd a {
+  border-bottom: 1px solid var(--c-line);
+  transition: border-color var(--d-fast) var(--e-out);
+}
+.detail-list dd a:hover {
+  border-bottom-color: var(--c-accent);
+  color: var(--c-accent);
+}
+
+.map-frame {
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: var(--c-paper-3);
+  border: 1px solid var(--c-line);
+}
+.map-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   11. Cross navigation
+   -------------------------------------------------------------------------- */
+.cross {
+  border-top: 1px solid var(--c-line);
+}
+.cross__item {
+  display: grid;
+  gap: var(--s-2) var(--s-7);
+  padding-block: var(--s-6);
+  border-bottom: 1px solid var(--c-line);
+  transition: padding-left var(--d-base) var(--e-out);
+}
+@media (min-width: 800px) {
+  .cross__item {
+    grid-template-columns: 10rem 1fr auto;
+    align-items: baseline;
+  }
+  .cross__item:hover {
+    padding-left: var(--s-4);
+  }
+}
+.cross__item span {
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--cross-accent, var(--c-accent));
+}
+.cross__item h3 {
+  font-size: var(--t-h3);
+  font-weight: 400;
+}
+.cross__item p {
+  font-size: var(--t-small);
+  max-width: 30rem;
+}
+.cross__arrow {
+  color: var(--cross-accent, var(--c-accent));
+}
+
+/* --------------------------------------------------------------------------
+   12. Split layout helper
+   -------------------------------------------------------------------------- */
+.split {
+  display: grid;
+  gap: var(--s-8);
+}
+@media (min-width: 900px) {
+  .split {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-10);
+  }
+  .split--narrow {
+    grid-template-columns: 1fr 1.4fr;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   13. Sub-page hero & breadcrumb
+   -------------------------------------------------------------------------- */
+.page-hero {
+  min-height: 72svh;
+  padding-top: calc(var(--header-h) + var(--s-9));
+  padding-bottom: var(--s-8);
+}
+.page-hero .hero__title {
+  font-size: var(--t-h1);
+}
+.breadcrumb {
+  margin-bottom: var(--s-6);
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--c-ink-faint);
+}
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.breadcrumb li:not(:last-child)::after {
+  content: "/";
+  color: var(--c-line);
+}
+.breadcrumb a:hover {
+  color: var(--c-accent);
+}
+
+/* --------------------------------------------------------------------------
+   14. Footer — the single dark band on the site.
+   -------------------------------------------------------------------------- */
+.site-footer {
+  position: relative;
+  z-index: var(--z-content);
+  background: var(--c-ink-inverse);
+  color: var(--c-paper);
+  padding-block: var(--s-9) var(--s-6);
+}
+.site-footer .brand {
+  color: var(--c-paper);
+}
+.site-footer__grid {
+  display: grid;
+  gap: var(--s-7);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  margin-bottom: var(--s-8);
+}
+.site-footer h2 {
+  font-family: var(--f-body);
+  font-size: var(--t-label);
+  font-weight: 500;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: rgba(233, 231, 226, 0.45);
+  margin-bottom: var(--s-4);
+}
+.site-footer li + li {
+  margin-top: var(--s-3);
+}
+.site-footer p,
+.site-footer a {
+  color: rgba(233, 231, 226, 0.72);
+  font-size: var(--t-small);
+  transition: color var(--d-fast) var(--e-out);
+}
+.site-footer a:hover {
+  color: var(--c-paper);
+}
+.site-footer__bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding-top: var(--s-5);
+  border-top: 1px solid rgba(233, 231, 226, 0.14);
+}
+
+/* Floating WhatsApp — reachable everywhere, quiet enough not to shout. */
+.wa-float {
+  position: fixed;
+  right: clamp(0.9rem, 3vw, 1.75rem);
+  bottom: clamp(0.9rem, 3vw, 1.75rem);
+  z-index: calc(var(--z-header) - 1);
+  display: grid;
+  place-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--c-ink);
+  color: var(--c-paper);
+  box-shadow: 0 8px 24px rgba(18, 18, 15, 0.18);
+  transform: translateY(140%);
+  transition: transform var(--d-slow) var(--e-out),
+    background-color var(--d-fast) var(--e-out);
+}
+.wa-float.is-in {
+  transform: translateY(0);
+}
+.wa-float:hover {
+  background: #1f7a4a;
+}
+.wa-float svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* --------------------------------------------------------------------------
+   15. Reveal system — JS flips a class, CSS owns the animation.
+   -------------------------------------------------------------------------- */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity var(--d-reveal) var(--e-out),
+    transform var(--d-reveal) var(--e-out);
+  transition-delay: var(--reveal-delay, 0s);
+}
+[data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Line-by-line masked reveal for display headings. */
+.split-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+}
+.split-line > span {
+  display: block;
+  transform: translateY(105%);
+  transition: transform var(--d-reveal) var(--e-out);
+  transition-delay: var(--reveal-delay, 0s);
+}
+.split-line.is-in > span {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  .split-line > span {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

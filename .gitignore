@@ -1,0 +1,23 @@
+# Editor / tooling
+.claude/
+CLAUDE.md
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Local notes and scratch work
+notes/
+*.local
+*.log
+*.tmp
+*.bak
+~$*
+
+# Source assets not meant for the public site
+_source/

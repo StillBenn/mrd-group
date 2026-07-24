@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Petrol ve enerji — teknik çizim, geçici görsel">
+  <rect width="800" height="1000" fill="#d8d4cb"/>
+  <g stroke="#12120f" stroke-opacity=".10" stroke-width="1">
+    <path d="M0 60h800M0 120h800M0 180h800M0 240h800M0 300h800M0 360h800M0 420h800M0 480h800M0 540h800M0 600h800M0 660h800M0 720h800M0 780h800M0 840h800M0 900h800M0 960h800"/>
+    <path d="M60 0v1000M180 0v1000M300 0v1000M420 0v1000M540 0v1000M660 0v1000M780 0v1000"/>
+  </g>
+
+  <!-- strata contours -->
+  <g fill="none" stroke="#26456b" stroke-width="1.4">
+    <g stroke-opacity=".5">
+      <path d="M-20 300C130 250 260 350 400 306S660 236 820 288"/>
+      <path d="M-20 348C130 298 260 398 400 354S660 284 820 336"/>
+      <path d="M-20 396C130 346 260 446 400 402S660 332 820 384"/>
+    </g>
+    <g stroke-opacity=".3">
+      <path d="M-20 456C130 406 260 506 400 462S660 392 820 444"/>
+      <path d="M-20 504C130 454 260 554 400 510S660 440 820 492"/>
+      <path d="M-20 552C130 502 260 602 400 558S660 488 820 540"/>
+      <path d="M-20 600C130 550 260 650 400 606S660 536 820 588"/>
+    </g>
+    <g stroke-opacity=".18">
+      <path d="M-20 660C130 610 260 710 400 666S660 596 820 648"/>
+      <path d="M-20 708C130 658 260 758 400 714S660 644 820 696"/>
+      <path d="M-20 756C130 706 260 806 400 762S660 692 820 744"/>
+      <path d="M-20 804C130 754 260 854 400 810S660 740 820 792"/>
+      <path d="M-20 852C130 802 260 902 400 858S660 788 820 840"/>
+    </g>
+  </g>
+
+  <!-- surface line -->
+  <g stroke="#12120f" stroke-opacity=".55" stroke-width="1.5">
+    <path d="M40 210h720"/>
+  </g>
+
+  <!-- wells / risers -->
+  <g stroke="#12120f" stroke-opacity=".5" stroke-width="1.5" fill="none">
+    <path d="M190 210V620M400 210V760M610 210V560"/>
+    <path d="M160 150h60M370 130h60M580 168h60"/>
+    <path d="M190 150v60M400 130v80M610 168v42"/>
+    <path d="M164 150l26-26M216 150l-26-26M374 130l26-26M426 130l-26-26M584 168l26-26M636 168l-26-26"/>
+  </g>
+  <g fill="#26456b" fill-opacity=".6">
+    <circle cx="190" cy="620" r="6"/>
+    <circle cx="400" cy="760" r="6"/>
+    <circle cx="610" cy="560" r="6"/>
+  </g>
+
+  <!-- distribution line -->
+  <g stroke="#26456b" stroke-opacity=".55" stroke-width="2" fill="none" stroke-dasharray="10 7">
+    <path d="M40 180h720"/>
+  </g>
+
+  <g fill="#12120f" fill-opacity=".45" font-family="Georgia, serif" font-size="17" letter-spacing="1">
+    <text x="40" y="120">TEDARİK — LOJİSTİK</text>
+    <text x="40" y="964">AKARYAKIT — ENERJİ ÇÖZÜMLERİ</text>
+  </g>
+</svg>
