@@ -270,7 +270,10 @@ async function initStage() {
         trigger: el,
         start: "top bottom",
         end: "top top",
-        scrub: true,
+        /* A number, not true: ScrollTrigger eases the scrubbed value over ~0.7s
+           instead of snapping it to every scroll event. That damping is what
+           turns the background's stepping into a smooth drift. */
+        scrub: 0.7,
         onUpdate: (self) =>
           scene.setBlend(indices[i - 1], indices[i], self.progress),
       });

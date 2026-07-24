@@ -236,10 +236,12 @@ export function createScene(container) {
 
   container.appendChild(canvas);
 
-  /* Relief needs detail to read as carved, so it renders closer to display
-     resolution than a gradient would — but still below it, because the
-     shading is soft and the browser's upscale is free. */
-  const SCALE = 0.7;
+  /* The relief is low-frequency and soft, so it can render at half display
+     resolution and be upscaled by the browser for free. Lower is not just a
+     size win — the fragment shader samples noise ~15 times per pixel, and at
+     0.7 that fill cost competed with the scroll for frames and read as a
+     tremble. Half resolution buys the headroom that makes scrolling smooth. */
+  const SCALE = 0.5;
   let aspect = 1;
 
   function resize() {
