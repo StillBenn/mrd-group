@@ -26,17 +26,25 @@
    HTML above it.
    ========================================================================== */
 
-/* Chapter → mood. `at` is where the object sits (aspect-corrected units, the
-   screen is 1.0 tall); `size` its radius; `warp` picks a different part of
-   the noise field so each chapter is carved into a different form. */
+/* Chapter → mood.
+
+   `at[0]` is a FRACTION of the half-width, not a fixed distance. The screen
+   is 1.0 tall but its width depends on the aspect ratio, so a fixed offset
+   that sits comfortably on a wide monitor runs straight off the edge of a
+   narrow window or a phone. `at[1]` is a vertical offset in the same units
+   as the height, where the safe range is about ±0.2.
+
+   `size` is the medallion radius on a wide screen; it is scaled down on
+   narrow ones in update(). `warp` rotates the carving so each chapter
+   presents a different face. */
 const CHAPTERS = {
-  intro:    { color: [0.541, 0.373, 0.169], warp:  0.0, at: [ 0.36,  0.06], size: 0.30 },
-  group:    { color: [0.541, 0.373, 0.169], warp:  9.0, at: [ 0.40, -0.02], size: 0.24 },
-  market:   { color: [0.180, 0.384, 0.267], warp: 18.0, at: [ 0.34,  0.12], size: 0.27 },
-  insaat:   { color: [0.612, 0.310, 0.149], warp: 27.0, at: [ 0.39, -0.06], size: 0.29 },
-  petrol:   { color: [0.149, 0.271, 0.420], warp: 36.0, at: [ 0.32,  0.10], size: 0.26 },
-  approach: { color: [0.541, 0.373, 0.169], warp: 45.0, at: [ 0.41,  0.02], size: 0.23 },
-  close:    { color: [0.541, 0.373, 0.169], warp: 54.0, at: [ 0.35,  0.08], size: 0.28 },
+  intro:    { color: [0.541, 0.373, 0.169], warp:  0.0, at: [ 0.45,  0.06], size: 0.30 },
+  group:    { color: [0.541, 0.373, 0.169], warp:  9.0, at: [ 0.50, -0.02], size: 0.24 },
+  market:   { color: [0.180, 0.384, 0.267], warp: 18.0, at: [ 0.42,  0.12], size: 0.27 },
+  insaat:   { color: [0.612, 0.310, 0.149], warp: 27.0, at: [ 0.49, -0.06], size: 0.29 },
+  petrol:   { color: [0.149, 0.271, 0.420], warp: 36.0, at: [ 0.40,  0.10], size: 0.26 },
+  approach: { color: [0.541, 0.373, 0.169], warp: 45.0, at: [ 0.51,  0.02], size: 0.23 },
+  close:    { color: [0.541, 0.373, 0.169], warp: 54.0, at: [ 0.44,  0.08], size: 0.28 },
 };
 
 const NAMES = Object.keys(CHAPTERS);
@@ -101,44 +109,72 @@ float fbm(vec2 p) {
    the ornament is divisible by its own story rather than arbitrary.
    -------------------------------------------------------------------------- */
 
+const float PI = 3.14159265359;
+
+vec2 rot(vec2 p, float t) {
+  float s = sin(t);
+  float c = cos(t);
+  return mat2(c, -s, s, c) * p;
+}
+
+float sdCircle(vec2 p, float r) {
+  return length(p) - r;
+}
+
+/* Signed distance to a regular n-gon, measured to its apothem. Negative
+   inside. Straight edges are the point: stone is cut in flats, and flats are
+   what let the eye read a facet. */
+float sdNgon(vec2 p, float r, float n) {
+  float a = PI / n;
+  float ang = atan(p.y, p.x);
+  ang = mod(ang + a, 2.0 * a) - a;
+  return length(p) * cos(ang) - r;
+}
+
+/* A linear ramp out of a distance field. Linear — not smoothstep — because a
+   chamfer is a flat bevel, and a flat bevel catches light as a hard edge.
+   Smooth shoulders are what made the earlier attempts look like cushions. */
+float chamfer(float d, float w) {
+  return clamp(-d / w, 0.0, 1.0);
+}
+
 /* Local coordinates: centred on the object and scaled so its rim sits at 1.0. */
 vec2 local(vec2 p) {
-  vec2 d = (p - uAt) / uSize;
-  float s = sin(uWarp * 0.10);
-  float c = cos(uWarp * 0.10);
-  return mat2(c, -s, s, c) * d;
+  return rot((p - uAt) / uSize, uWarp * 0.06);
 }
 
 float ornament(vec2 q) {
-  float r = length(q);
-  float a = atan(q.y, q.x);
   float h = 0.0;
 
-  /* Outer band — a bevelled annulus that closes the shape. */
-  h += smoothstep(0.075, 0.010, abs(r - 0.90)) * 0.62;
+  /* The base plate the whole medallion is cut from. */
+  h += chamfer(sdCircle(q, 0.97), 0.055) * 0.26;
 
-  /* Twelve radiating flutes between the band and the star. The exponent
-     narrows each crest into a ridge — a wide cosine reads as a cushion, a
-     narrow one reads as a chisel cut. */
-  float flutes = 0.5 + 0.5 * cos(a * 12.0);
-  flutes = pow(flutes, 2.4);
-  float fenv = smoothstep(0.36, 0.42, r) * smoothstep(0.88, 0.80, r);
-  h += flutes * fenv * 0.95;
+  /* Outer frame band. */
+  float ring = max(sdCircle(q, 0.95), -sdCircle(q, 0.79));
+  h += chamfer(ring, 0.032) * 0.46;
 
-  /* Six-point star at the heart. */
-  float starEdge = 0.30 + 0.11 * cos(a * 6.0);
-  h += smoothstep(starEdge, starEdge - 0.035, r) * 0.72;
+  /* The twelve-point star: the union of two hexagons set thirty degrees
+     apart. This is how the pattern is actually laid out by hand, and twelve
+     divides by the group's three sectors. */
+  float star = min(sdNgon(q, 0.60, 6.0), sdNgon(rot(q, PI / 6.0), 0.60, 6.0));
+  h += chamfer(star, 0.048) * 0.88;
 
-  /* Raised centre boss. */
-  h += smoothstep(0.135, 0.055, r) * 0.55;
+  /* A counter-rotated star cut back into it, which is what turns a plateau
+     into interlace. */
+  vec2 qi = rot(q, PI / 12.0);
+  float inner = min(sdNgon(qi, 0.33, 6.0), sdNgon(rot(qi, PI / 6.0), 0.33, 6.0));
+  h -= chamfer(inner, 0.030) * 0.32;
 
-  /* A fine turned texture across the whole face, like a lathe leaves. This
-     is what the eye reads as "worked surface" up close. */
-  h += 0.085 * (0.5 + 0.5 * cos(r * 96.0)) * smoothstep(1.0, 0.15, r);
+  /* Centre boss. */
+  h += chamfer(sdCircle(q, 0.155), 0.05) * 0.58;
 
-  /* Hairline incised rings framing the flutes. */
-  h -= smoothstep(0.012, 0.0, abs(r - 0.36)) * 0.16;
-  h -= smoothstep(0.012, 0.0, abs(r - 0.79)) * 0.16;
+  /* Incised hairlines tracing the star and the frame — the chisel line that
+     separates one band from the next. */
+  h -= smoothstep(0.011, 0.0, abs(star + 0.055)) * 0.24;
+  h -= smoothstep(0.009, 0.0, abs(ring + 0.050)) * 0.20;
+
+  /* Fine tooling across the face: the marks a claw chisel leaves. */
+  h += 0.045 * (0.5 + 0.5 * cos(length(q) * 118.0)) * chamfer(sdCircle(q, 0.95), 0.10);
 
   return h;
 }
@@ -356,12 +392,22 @@ export function createScene(container) {
       lerp(a.color[2], b.color[2], k)
     );
     gl.uniform1f(u.uWarp, lerp(a.warp, b.warp, k));
-    gl.uniform2f(
-      u.uAt,
-      lerp(a.at[0], b.at[0], k),
-      lerp(a.at[1], b.at[1], k)
-    );
-    gl.uniform1f(u.uSize, lerp(a.size, b.size, k));
+
+    /* Place and scale the medallion against the actual viewport so it is never
+       sliced by an edge. The radius is derived from the room actually left
+       between the centre and the nearest edge — a guessed scale factor works
+       on the screen you tested and fails on the next one. The rim sits at 0.97
+       in local units, so that is what has to fit. */
+    const halfWidth = aspect / 2;
+    const atX = lerp(a.at[0], b.at[0], k) * halfWidth * 0.86;
+    const atY = lerp(a.at[1], b.at[1], k);
+
+    const roomX = (halfWidth - Math.abs(atX)) * 0.94;
+    const roomY = (0.5 - Math.abs(atY)) * 0.94;
+    const size = Math.min(lerp(a.size, b.size, k), Math.min(roomX, roomY) / 0.97);
+
+    gl.uniform2f(u.uAt, atX, atY);
+    gl.uniform1f(u.uSize, size);
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
