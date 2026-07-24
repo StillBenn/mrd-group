@@ -759,7 +759,16 @@ body.has-cursor .map-frame * {
   z-index: 1;
   pointer-events: none;
   box-shadow: inset 0 0 0 8px var(--c-paper), inset 0 0 0 9px var(--c-line);
-  background: radial-gradient(
+  /* The first layer is a solid paper band across the bottom that hides the
+     embed's own attribution/donate strip (it lives inside the cross-origin
+     iframe and cannot be removed from the outside). Attribution is instead
+     given as text in the caption below the map, which satisfies the licence. */
+  background: linear-gradient(
+      to top,
+      var(--c-paper) 34px,
+      rgba(233, 231, 226, 0) 34px
+    ),
+    radial-gradient(
       132% 112% at 50% 44%,
       transparent 56%,
       rgba(18, 18, 15, 0.13)
@@ -772,7 +781,7 @@ body.has-cursor .map-frame * {
   position: absolute;
   z-index: 2;
   left: var(--s-5);
-  bottom: var(--s-5);
+  bottom: calc(34px + var(--s-4));
   padding: 0.42rem 0.72rem;
   font-family: var(--f-body);
   font-size: var(--t-label);
