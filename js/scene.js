@@ -1,50 +1,34 @@
 /* ==========================================================================
    MRD Group — Canvas stage
    --------------------------------------------------------------------------
-   A single carved object sitting on empty paper.
+   The ground is a plaster bas-relief: a procedural height field, lit by a
+   lamp that follows the pointer. Moving the mouse sweeps light across the
+   surface, so ridges catch highlights and hollows fall into shadow.
 
-   The reference this is built against (Immersive Garden) is almost entirely
-   BLANK: a flat pale wall, and one small, crisp, highly detailed plaster
-   relief occupying a quarter of the screen. Its power comes from the silence
-   around it — you can see exactly where the object stops and the wall begins.
-
-   Two earlier attempts here failed by doing the opposite: a soft wash spread
-   edge to edge, with no silhouette and no detail. More coverage made it
-   worse, not better. So:
-
-     · the ground is flat paper with only a whisper of wall texture
-     · one bounded object, with an organic outline you can actually read
-     · high frequency detail inside it, lit hard enough to cast real shadow
-     · the pointer moves the light across it, not the object
+   Why a height field and not a gradient: a smooth wash on a light page reads
+   as an empty page. Relief gives local contrast — real highlights and real
+   shadows — which is what makes a pale surface feel like a material.
 
    Why raw WebGL and no 3D library:
      · one draw call, no geometry, no per-frame JavaScript
-     · pixels outside the object exit the shader immediately
-     · the whole surface is ~7 KB of shader source, nothing to download
+     · the scroll never competes with the scene for main-thread time
+     · the whole surface is ~6 KB of shader source, nothing to download
 
    The canvas is decorative and aria-hidden. Every word on the page is real
    HTML above it.
    ========================================================================== */
 
-/* Chapter → mood.
-
-   `at[0]` is a FRACTION of the half-width, not a fixed distance. The screen
-   is 1.0 tall but its width depends on the aspect ratio, so a fixed offset
-   that sits comfortably on a wide monitor runs straight off the edge of a
-   narrow window or a phone. `at[1]` is a vertical offset in the same units
-   as the height, where the safe range is about ±0.2.
-
-   `size` is the medallion radius on a wide screen; it is scaled down on
-   narrow ones in update(). `warp` rotates the carving so each chapter
-   presents a different face. */
+/* Chapter → mood. `warp` moves the relief to a different part of the noise
+   field so each chapter is carved differently; `light` is where the lamp
+   rests when the pointer is still; `depth` scales how deep the carving cuts. */
 const CHAPTERS = {
-  intro:    { color: [0.541, 0.373, 0.169], warp:  0.0, at: [ 0.45,  0.06], size: 0.30 },
-  group:    { color: [0.541, 0.373, 0.169], warp:  9.0, at: [ 0.50, -0.02], size: 0.24 },
-  market:   { color: [0.180, 0.384, 0.267], warp: 18.0, at: [ 0.42,  0.12], size: 0.27 },
-  insaat:   { color: [0.612, 0.310, 0.149], warp: 27.0, at: [ 0.49, -0.06], size: 0.29 },
-  petrol:   { color: [0.149, 0.271, 0.420], warp: 36.0, at: [ 0.40,  0.10], size: 0.26 },
-  approach: { color: [0.541, 0.373, 0.169], warp: 45.0, at: [ 0.51,  0.02], size: 0.23 },
-  close:    { color: [0.541, 0.373, 0.169], warp: 54.0, at: [ 0.44,  0.08], size: 0.28 },
+  intro:    { color: [0.541, 0.373, 0.169], warp:  0.0, light: [ 0.26, 0.12], depth: 1.00 },
+  group:    { color: [0.541, 0.373, 0.169], warp:  6.0, light: [-0.20, 0.06], depth: 0.82 },
+  market:   { color: [0.180, 0.384, 0.267], warp: 12.0, light: [-0.30, 0.14], depth: 1.02 },
+  insaat:   { color: [0.612, 0.310, 0.149], warp: 18.0, light: [ 0.32, 0.10], depth: 1.10 },
+  petrol:   { color: [0.149, 0.271, 0.420], warp: 24.0, light: [ 0.04, 0.18], depth: 1.04 },
+  approach: { color: [0.541, 0.373, 0.169], warp: 30.0, light: [-0.24, 0.02], depth: 0.78 },
+  close:    { color: [0.541, 0.373, 0.169], warp: 36.0, light: [ 0.00, 0.16], depth: 0.92 },
 };
 
 const NAMES = Object.keys(CHAPTERS);
@@ -63,11 +47,10 @@ precision mediump float;
 
 uniform vec2  uRes;
 uniform float uTime;
-uniform vec2  uPointer;   // light direction, aspect-corrected units
+uniform vec2  uPointer;   // lamp position, aspect-corrected units
 uniform vec3  uColor;     // chapter accent
 uniform float uWarp;
-uniform vec2  uAt;        // object centre
-uniform float uSize;      // object radius
+uniform float uDepth;
 uniform vec3  uPaper;
 
 float hash(vec2 p) {
@@ -85,6 +68,7 @@ float noise(vec2 p) {
   );
 }
 
+/* Plain fractal noise — soft, cloud-shaped. Used for the broad haze. */
 float fbm(vec2 p) {
   float v = 0.0;
   float a = 0.55;
@@ -96,162 +80,86 @@ float fbm(vec2 p) {
   return v;
 }
 
-/* --------------------------------------------------------------------------
-   The carved medallion.
-
-   Built from exact analytic functions, not from noise. Noise can only ever
-   produce a shapeless crust — four attempts here proved that. A relief reads
-   as carved because it is DELIBERATE: symmetry you can count, edges that
-   close, a centre the eye can find.
-
-   The motif is a rosette: an outer band, twelve radiating flutes, a six-point
-   star and a raised boss. Twelve and six because the group is three sectors —
-   the ornament is divisible by its own story rather than arbitrary.
-   -------------------------------------------------------------------------- */
-
-const float PI = 3.14159265359;
-
-vec2 rot(vec2 p, float t) {
-  float s = sin(t);
-  float c = cos(t);
-  return mat2(c, -s, s, c) * p;
-}
-
-float sdCircle(vec2 p, float r) {
-  return length(p) - r;
-}
-
-/* Signed distance to a regular n-gon, measured to its apothem. Negative
-   inside. Straight edges are the point: stone is cut in flats, and flats are
-   what let the eye read a facet. */
-float sdNgon(vec2 p, float r, float n) {
-  float a = PI / n;
-  float ang = atan(p.y, p.x);
-  ang = mod(ang + a, 2.0 * a) - a;
-  return length(p) * cos(ang) - r;
-}
-
-/* A linear ramp out of a distance field. Linear — not smoothstep — because a
-   chamfer is a flat bevel, and a flat bevel catches light as a hard edge.
-   Smooth shoulders are what made the earlier attempts look like cushions. */
-float chamfer(float d, float w) {
-  return clamp(-d / w, 0.0, 1.0);
-}
-
-/* Local coordinates: centred on the object and scaled so its rim sits at 1.0. */
-vec2 local(vec2 p) {
-  return rot((p - uAt) / uSize, uWarp * 0.06);
-}
-
-float ornament(vec2 q) {
+/* Ridged fractal noise. Folding the noise around its midpoint turns smooth
+   blobs into creases and crests — the shapes a chisel leaves, not clouds. */
+float ridged(vec2 p) {
   float h = 0.0;
-
-  /* The base plate the whole medallion is cut from. */
-  h += chamfer(sdCircle(q, 0.97), 0.055) * 0.26;
-
-  /* Outer frame band. */
-  float ring = max(sdCircle(q, 0.95), -sdCircle(q, 0.79));
-  h += chamfer(ring, 0.032) * 0.46;
-
-  /* The twelve-point star: the union of two hexagons set thirty degrees
-     apart. This is how the pattern is actually laid out by hand, and twelve
-     divides by the group's three sectors. */
-  float star = min(sdNgon(q, 0.60, 6.0), sdNgon(rot(q, PI / 6.0), 0.60, 6.0));
-  h += chamfer(star, 0.048) * 0.88;
-
-  /* A counter-rotated star cut back into it, which is what turns a plateau
-     into interlace. */
-  vec2 qi = rot(q, PI / 12.0);
-  float inner = min(sdNgon(qi, 0.33, 6.0), sdNgon(rot(qi, PI / 6.0), 0.33, 6.0));
-  h -= chamfer(inner, 0.030) * 0.32;
-
-  /* Centre boss. */
-  h += chamfer(sdCircle(q, 0.155), 0.05) * 0.58;
-
-  /* Incised hairlines tracing the star and the frame — the chisel line that
-     separates one band from the next. */
-  h -= smoothstep(0.011, 0.0, abs(star + 0.055)) * 0.24;
-  h -= smoothstep(0.009, 0.0, abs(ring + 0.050)) * 0.20;
-
-  /* Fine tooling across the face: the marks a claw chisel leaves. */
-  h += 0.045 * (0.5 + 0.5 * cos(length(q) * 118.0)) * chamfer(sdCircle(q, 0.95), 0.10);
-
+  float a = 0.52;
+  for (int i = 0; i < 4; i++) {
+    float n = noise(p);
+    n = 1.0 - abs(n * 2.0 - 1.0);
+    h += a * n * n;
+    p = p * 2.07 + vec2(2.3, 4.7);
+    a *= 0.52;
+  }
   return h;
 }
 
+/* The carved surface. Warped so the ridges flow instead of running straight. */
 float field(vec2 p) {
-  return ornament(local(p));
-}
-
-/* The outline. A medallion closes on itself, so the silhouette is its rim —
-   a shape the eye can read all the way round. */
-float silhouette(vec2 p) {
-  float r = length(local(p));
-  return 1.0 - smoothstep(0.95, 1.0, r);
+  float t = uTime * 0.010;
+  vec2 w = vec2(
+    noise(p * 0.85 + vec2(uWarp, t)),
+    noise(p * 0.85 + vec2(t * 0.8, uWarp + 5.2))
+  );
+  return ridged(p * 1.02 + (w - 0.5) * 1.15 + vec2(uWarp, 0.0));
 }
 
 void main() {
   vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
 
-  /* Flat wall with a whisper of plaster mottling. This is what most of the
-     screen is, so it must stay quiet — and cheap: one octave, because it runs
-     on every pixel including the ~80 % that never enter the branch below. */
-  float wall = noise(p * 2.4 + 17.0);
-  vec3 col = uPaper * (0.995 + wall * 0.012);
+  /* The relief is carved into the upper right and fades towards the lower
+     left, where the headline and body copy sit. Text always lands on calm
+     paper; the material shows in the space beside it. */
+  float m = smoothstep(-0.52, 0.34, p.x * 0.72 + p.y * 0.88);
+  float mask = 0.36 + 0.64 * m;
 
-  float mask = silhouette(p);
+  float e = 1.4 / uRes.y;
+  float h  = field(p);
+  float hx = field(p + vec2(e, 0.0));
+  float hy = field(p + vec2(0.0, e));
 
-  /* Everything outside the object leaves now. The branch is coherent across
-     large contiguous areas, so the GPU skips the expensive part cheaply. */
-  if (mask > 0.002) {
-    float e = 1.15 / uRes.y;
-    float h  = field(p);
-    float hx = field(p + vec2(e, 0.0));
-    float hy = field(p + vec2(0.0, e));
+  float amp = 0.070 * uDepth * mask;
+  vec3 n = normalize(vec3((h - hx) * amp, (h - hy) * amp, e * 0.62));
 
-    /* Carve depth eases in at the rim so the object rises out of the wall
-       instead of being stamped onto it. */
-    float rise = smoothstep(0.0, 0.55, mask);
-    float amp = 0.055 * rise;
-    vec3 n = normalize(vec3((h - hx) * amp, (h - hy) * amp, e * 0.5));
+  /* Lamp. The z term keeps it above the surface so the light grazes rather
+     than blows out the crests. */
+  vec3 L = normalize(vec3(uPointer - p, 0.46));
+  float diff = max(dot(n, L), 0.0);
 
-    vec3 L = normalize(vec3(uPointer - p, 0.40));
-    float diff = max(dot(n, L), 0.0);
+  vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
+  float spec = pow(max(dot(n, H), 0.0), 36.0);
 
-    vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
-    float spec = pow(max(dot(n, H), 0.0), 42.0);
+  /* Crevices sit in their own shadow. */
+  float ao = clamp(h * 1.15, 0.0, 1.0);
 
-    /* Crevices sit in their own shadow. */
-    float ao = clamp(h * 1.25, 0.0, 1.0);
+  /* The lit side is capped just above paper white so highlights never clip;
+     the contrast is carried by the shadows instead. That is how a pale
+     material actually reads — blown highlights look like a cheap filter. */
+  float shade = 0.76 + 0.26 * diff;
+  shade *= mix(0.91, 1.02, ao);
 
-    /* White plaster keeps its shadows light — they read as form, not as dirt.
-       The floor here lands the deepest crevice around 150 on a 231 wall,
-       which is where the reference sits. Any lower and the object looks
-       grubby rather than carved. */
-    float shade = 0.74 + 0.30 * diff;
-    shade *= mix(0.88, 1.03, ao);
+  vec3 col = uPaper * mix(1.0, shade, mask);
+  col += spec * 0.07 * mask;
 
-    vec3 lit = uPaper * shade + spec * 0.13;
+  /* Chapter colour settles in the shadows, the way warm light does on stone. */
+  col = mix(col, mix(col, uColor, 0.22), (1.0 - diff) * mask);
 
-    /* Chapter colour settles in the shadows, the way warm light does on stone. */
-    lit = mix(lit, mix(lit, uColor, 0.24), 1.0 - diff);
+  /* A broad haze drifting over everything — including the calm text side, so
+     the page reads as one atmosphere rather than a carved half and a blank
+     half. Low frequency and low amplitude: felt, not seen. */
+  float haze = fbm(p * 0.62 + vec2(uWarp * 0.25, uTime * 0.007));
+  col *= 0.948 + 0.104 * haze;
 
-    col = mix(col, lit, rise);
-
-    /* A soft contact shadow just outside the rim gives the object weight. */
-    float rim = mask * (1.0 - rise);
-    col *= 1.0 - rim * 0.10;
-  }
+  /* Quiet vignette keeps the eye on the centre column of text. */
+  float vig = smoothstep(1.40, 0.34, length(p * vec2(0.78, 1.0)));
+  col -= (1.0 - vig) * 0.040;
 
   /* Paper tooth. Deliberately STATIC — reseeding the grain every frame turns
      the whole page into film noise, which reads as the screen trembling once
      anything starts moving. Fixed grain stops banding without flickering. */
   float grain = hash(floor(gl_FragCoord.xy));
-  col += (grain - 0.5) * 0.013;
-
-  /* Never reach pure white — blown highlights are the one thing that makes a
-     pale surface look like a cheap filter. */
-  col = min(col, vec3(0.988));
+  col += (grain - 0.5) * 0.016;
 
   gl_FragColor = vec4(col, 1.0);
 }
@@ -304,7 +212,7 @@ export function createScene(container) {
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
   const u = {};
-  for (const name of ["uRes", "uTime", "uPointer", "uColor", "uWarp", "uAt", "uSize", "uPaper"]) {
+  for (const name of ["uRes", "uTime", "uPointer", "uColor", "uWarp", "uDepth", "uPaper"]) {
     u[name] = gl.getUniformLocation(program, name);
   }
 
@@ -322,10 +230,10 @@ export function createScene(container) {
 
   container.appendChild(canvas);
 
-  /* The object has to be CRISP, so it renders close to display resolution.
-     Affordable because most of the screen exits the shader on the first
-     branch — only the object pays for the six octaves. */
-  const SCALE = 1.0;
+  /* Relief needs detail to read as carved, so it renders closer to display
+     resolution than a gradient would — but still below it, because the
+     shading is soft and the browser's upscale is free. */
+  const SCALE = 0.7;
   let aspect = 1;
 
   function resize() {
@@ -353,9 +261,9 @@ export function createScene(container) {
 
   const state = { from: 0, to: 0, k: 1 };
 
-  /* Light position in the shader's aspect-corrected space: x spans ±aspect/2,
+  /* Lamp position in the shader's aspect-corrected space: x spans ±aspect/2,
      y spans ±0.5. `has` stays false until the pointer actually moves, so
-     touch devices keep a slowly orbiting light instead of a stuck one. */
+     touch devices keep the drifting lamp instead of a stuck one. */
   const pointer = { x: 0, y: 0, tx: 0, ty: 0, has: false };
 
   function onPointer(e) {
@@ -370,15 +278,18 @@ export function createScene(container) {
     const b = CHAPTERS[NAMES[state.to]];
     const k = easeInOut(state.k);
 
-    /* With no pointer, the light orbits slowly so the surface still breathes. */
-    const baseX = Math.sin(time * 0.13) * 0.42;
-    const baseY = 0.18 + Math.cos(time * 0.097) * 0.16;
+    /* Where the lamp wants to be: the chapter's rest position plus a slow
+       orbit, so the surface breathes even when nothing is moving. */
+    const driftX = Math.sin(time * 0.11) * 0.20;
+    const driftY = Math.cos(time * 0.083) * 0.10;
+    const baseX = lerp(a.light[0], b.light[0], k) + driftX;
+    const baseY = lerp(a.light[1], b.light[1], k) + driftY;
 
     const targetX = pointer.has ? pointer.tx : baseX;
     const targetY = pointer.has ? pointer.ty : baseY;
 
-    /* Frame-rate independent easing: attached to the hand, but heavy enough
-       that stone does not snap around. */
+    /* Frame-rate independent easing: fast enough to feel attached to the
+       hand, slow enough that heavy stone does not snap around. */
     const smooth = 1 - Math.pow(0.0000006, Math.min(dt, 0.05));
     pointer.x = lerp(pointer.x, targetX, smooth);
     pointer.y = lerp(pointer.y, targetY, smooth);
@@ -392,22 +303,7 @@ export function createScene(container) {
       lerp(a.color[2], b.color[2], k)
     );
     gl.uniform1f(u.uWarp, lerp(a.warp, b.warp, k));
-
-    /* Place and scale the medallion against the actual viewport so it is never
-       sliced by an edge. The radius is derived from the room actually left
-       between the centre and the nearest edge — a guessed scale factor works
-       on the screen you tested and fails on the next one. The rim sits at 0.97
-       in local units, so that is what has to fit. */
-    const halfWidth = aspect / 2;
-    const atX = lerp(a.at[0], b.at[0], k) * halfWidth * 0.86;
-    const atY = lerp(a.at[1], b.at[1], k);
-
-    const roomX = (halfWidth - Math.abs(atX)) * 0.94;
-    const roomY = (0.5 - Math.abs(atY)) * 0.94;
-    const size = Math.min(lerp(a.size, b.size, k), Math.min(roomX, roomY) / 0.97);
-
-    gl.uniform2f(u.uAt, atX, atY);
-    gl.uniform1f(u.uSize, size);
+    gl.uniform1f(u.uDepth, lerp(a.depth, b.depth, k));
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
