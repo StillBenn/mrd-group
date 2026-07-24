@@ -20,15 +20,21 @@
 
 /* Chapter → mood. `warp` moves the relief to a different part of the noise
    field so each chapter is carved differently; `light` is where the lamp
-   rests when the pointer is still; `depth` scales how deep the carving cuts. */
+   rests when the pointer is still; `depth` scales how deep the carving cuts.
+
+   The `warp` steps are deliberately small (1.5 apart). Because `field()` adds
+   uWarp straight to the sample coordinate, the gap between two chapters is how
+   far the whole surface slides during one scroll section — large steps make
+   the background race past the scroll. 1.5 keeps each chapter visibly distinct
+   while the drift stays calm under the reader. */
 const CHAPTERS = {
-  intro:    { color: [0.541, 0.373, 0.169], warp:  0.0, light: [ 0.26, 0.12], depth: 1.00 },
-  group:    { color: [0.541, 0.373, 0.169], warp:  6.0, light: [-0.20, 0.06], depth: 0.82 },
-  market:   { color: [0.180, 0.384, 0.267], warp: 12.0, light: [-0.30, 0.14], depth: 1.02 },
-  insaat:   { color: [0.612, 0.310, 0.149], warp: 18.0, light: [ 0.32, 0.10], depth: 1.10 },
-  petrol:   { color: [0.149, 0.271, 0.420], warp: 24.0, light: [ 0.04, 0.18], depth: 1.04 },
-  approach: { color: [0.541, 0.373, 0.169], warp: 30.0, light: [-0.24, 0.02], depth: 0.78 },
-  close:    { color: [0.541, 0.373, 0.169], warp: 36.0, light: [ 0.00, 0.16], depth: 0.92 },
+  intro:    { color: [0.541, 0.373, 0.169], warp: 0.0, light: [ 0.26, 0.12], depth: 1.00 },
+  group:    { color: [0.541, 0.373, 0.169], warp: 1.5, light: [-0.20, 0.06], depth: 0.82 },
+  market:   { color: [0.180, 0.384, 0.267], warp: 3.0, light: [-0.30, 0.14], depth: 1.02 },
+  insaat:   { color: [0.612, 0.310, 0.149], warp: 4.5, light: [ 0.32, 0.10], depth: 1.10 },
+  petrol:   { color: [0.149, 0.271, 0.420], warp: 6.0, light: [ 0.04, 0.18], depth: 1.04 },
+  approach: { color: [0.541, 0.373, 0.169], warp: 7.5, light: [-0.24, 0.02], depth: 0.78 },
+  close:    { color: [0.541, 0.373, 0.169], warp: 9.0, light: [ 0.00, 0.16], depth: 0.92 },
 };
 
 const NAMES = Object.keys(CHAPTERS);
