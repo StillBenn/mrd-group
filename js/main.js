@@ -130,9 +130,11 @@ function initCursor() {
   const hoverables = "a, button, [data-cursor]";
   document.addEventListener("pointerover", (e) => {
     if (e.target.closest(hoverables)) el.classList.add("is-hover");
+    if (e.target.closest(".map-frame")) el.classList.add("is-hidden");
   });
   document.addEventListener("pointerout", (e) => {
     if (e.target.closest(hoverables)) el.classList.remove("is-hover");
+    if (e.target.closest(".map-frame")) el.classList.remove("is-hidden");
   });
 }
 
