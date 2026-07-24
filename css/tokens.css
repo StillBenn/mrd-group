@@ -29,7 +29,7 @@
   --c-insaat: #9c4f26; /* burnt sienna */
   --c-petrol: #26456b; /* deep navy */
 
-  /* Set per page via <body data-sector="market|insaat|petrol"> */
+  /* Set per page via <body data-sector="market|insaat|enerji"> */
   --c-accent: var(--c-brand);
 
   /* --- Type ------------------------------------------------------------ */
@@ -97,6 +97,6 @@ body[data-sector="market"] {
 body[data-sector="insaat"] {
   --c-accent: var(--c-insaat);
 }
-body[data-sector="petrol"] {
+body[data-sector="enerji"] {
   --c-accent: var(--c-petrol);
 }

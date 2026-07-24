@@ -567,7 +567,7 @@ body.menu-open .menu {
 .sector--insaat {
   --sector-accent: var(--c-insaat);
 }
-.sector--petrol {
+.sector--enerji {
   --sector-accent: var(--c-petrol);
 }
 
@@ -723,11 +723,12 @@ body.menu-open .menu {
   color: var(--c-accent);
 }
 
-/* The map is styled to read as a framed monochrome print rather than a raw
-   embed: the bright default tiles are toned into the paper palette, matted
-   inside a hairline frame, edge-vignetted, and labelled. It warms back up on
-   hover. The filter transition runs only on hover, never during scroll, so it
-   does not violate the frame-cost rules above. */
+/* The location is drawn as a schematic map in the site's own line/paper
+   language rather than a live third-party embed. That deliberately removes
+   the embed's problems in one move: no captured cursor over an iframe, no
+   broken zoom controls, no donate/attribution clutter. A "Yol tarifi" link
+   beside it opens the real map for anyone who needs directions.
+   Matted inside a hairline frame, edge-vignetted and labelled. */
 .map-frame {
   position: relative;
   overflow: hidden;
@@ -736,17 +737,17 @@ body.menu-open .menu {
   border: 1px solid var(--c-line);
   box-shadow: 0 22px 48px -32px rgba(18, 18, 15, 0.55);
 }
-.map-frame iframe {
+.map-frame img {
   position: relative;
   z-index: 0;
+  display: block;
   width: 100%;
   height: 100%;
-  border: 0;
-  filter: grayscale(1) sepia(0.26) contrast(0.9) brightness(1.06);
-  transition: filter 1.1s var(--e-out);
+  object-fit: cover;
+  transition: transform 1.6s var(--e-out);
 }
-.map-frame:hover iframe {
-  filter: grayscale(0.45) sepia(0.1) contrast(0.97) brightness(1.02);
+.map-frame:hover img {
+  transform: scale(1.03);
 }
 /* Paper mat + hairline inner frame + warm edge vignette, all in one overlay. */
 .map-frame::before {
