@@ -184,7 +184,7 @@
 }
 .brand__logo {
   display: block;
-  height: 2.35rem;
+  height: 3.1rem;
   width: auto;
   transition: height var(--d-base) var(--e-out),
     opacity var(--d-fast) var(--e-out);
@@ -193,29 +193,39 @@
   opacity: 0.72;
 }
 .site-header.is-stuck .brand__logo {
-  height: 1.9rem;
+  height: 2.5rem;
 }
 /* The logo is black on transparent; on the dark footer it flips to paper. */
 .site-footer .brand__logo {
-  height: 2.2rem;
+  height: 3.2rem;
   filter: brightness(0) invert(1);
 }
 
 /* Loader wordmark image. */
 .loader__logo {
-  height: 3rem;
+  height: 4.5rem;
   width: auto;
 }
 
-/* Division sub-brand lockup at the top of a sector hero. */
+/* Division sub-brand lockup at the top of a sector hero — sized to read as
+   the division's identity, not a footnote. */
 .page-hero__logo {
   display: block;
   width: auto;
-  height: 3rem;
-  margin-bottom: var(--s-6);
+  height: 4.5rem;
+  max-width: 100%;
+  margin-bottom: var(--s-7);
 }
 .page-hero__logo--tall {
-  height: 5.25rem;
+  height: 7.5rem;
+}
+@media (max-width: 560px) {
+  .page-hero__logo {
+    height: 3.6rem;
+  }
+  .page-hero__logo--tall {
+    height: 6rem;
+  }
 }
 
 .nav {
