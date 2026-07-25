@@ -25,9 +25,13 @@
   /* --- Accents ---------------------------------------------------------
      Used sparingly: rules, indices, hover states. Never as a fill.        */
   --c-brand: #8a5f2b; /* aged bronze — the holding */
-  --c-market: #2e6244; /* deep green */
-  --c-insaat: #9c4f26; /* burnt sienna */
-  --c-petrol: #26456b; /* deep navy */
+  /* Sector accents matched to the sub-brand logos: Cizre Park (market) is a
+     warm terracotta from its flame mark, MRD İnşaat is its brand blue, MRD
+     Enerji its brand green. Each is deepened from the logo's own colour just
+     enough to stay readable as an accent on the light paper ground. */
+  --c-market: #b5601c; /* terracotta — Cizre Park */
+  --c-insaat: #066fb2; /* brand blue — MRD İnşaat */
+  --c-petrol: #4e7d1e; /* brand green — MRD Enerji (var name kept internally) */
 
   /* Set per page via <body data-sector="market|insaat|enerji"> */
   --c-accent: var(--c-brand);

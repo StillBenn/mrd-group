@@ -30,9 +30,9 @@
 const CHAPTERS = {
   intro:    { color: [0.541, 0.373, 0.169], warp: 0.0, light: [ 0.26, 0.12], depth: 1.00 },
   group:    { color: [0.541, 0.373, 0.169], warp: 1.5, light: [-0.20, 0.06], depth: 0.82 },
-  market:   { color: [0.180, 0.384, 0.267], warp: 3.0, light: [-0.30, 0.14], depth: 1.02 },
-  insaat:   { color: [0.612, 0.310, 0.149], warp: 4.5, light: [ 0.32, 0.10], depth: 1.10 },
-  enerji:   { color: [0.149, 0.271, 0.420], warp: 6.0, light: [ 0.04, 0.18], depth: 1.04 },
+  market:   { color: [0.710, 0.376, 0.110], warp: 3.0, light: [-0.30, 0.14], depth: 1.02 },
+  insaat:   { color: [0.024, 0.435, 0.698], warp: 4.5, light: [ 0.32, 0.10], depth: 1.10 },
+  enerji:   { color: [0.306, 0.490, 0.118], warp: 6.0, light: [ 0.04, 0.18], depth: 1.04 },
   approach: { color: [0.541, 0.373, 0.169], warp: 7.5, light: [-0.24, 0.02], depth: 0.78 },
   close:    { color: [0.541, 0.373, 0.169], warp: 9.0, light: [ 0.00, 0.16], depth: 0.92 },
 };

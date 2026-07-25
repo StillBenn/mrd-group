@@ -179,24 +179,43 @@
 
 .brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--s-3);
-  font-family: var(--f-display);
-  font-size: 1.0625rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
 }
-.brand__rule {
-  display: inline-block;
-  width: 1.75rem;
-  height: 1px;
-  background: var(--c-accent);
-  transform: translateY(-0.35em);
-  transition: width var(--d-base) var(--e-out);
+.brand__logo {
+  display: block;
+  height: 2.35rem;
+  width: auto;
+  transition: height var(--d-base) var(--e-out),
+    opacity var(--d-fast) var(--e-out);
 }
-.brand:hover .brand__rule {
-  width: 2.75rem;
+.brand:hover .brand__logo {
+  opacity: 0.72;
+}
+.site-header.is-stuck .brand__logo {
+  height: 1.9rem;
+}
+/* The logo is black on transparent; on the dark footer it flips to paper. */
+.site-footer .brand__logo {
+  height: 2.2rem;
+  filter: brightness(0) invert(1);
+}
+
+/* Loader wordmark image. */
+.loader__logo {
+  height: 3rem;
+  width: auto;
+}
+
+/* Division sub-brand lockup at the top of a sector hero. */
+.page-hero__logo {
+  display: block;
+  width: auto;
+  height: 3rem;
+  margin-bottom: var(--s-6);
+}
+.page-hero__logo--tall {
+  height: 5.25rem;
 }
 
 .nav {
