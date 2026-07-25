@@ -1,7 +1,7 @@
 # MRD Group — corporate website
 
 Static marketing site for MRD Group, a Gaziantep-based group operating in three
-sectors: wholesale/market, construction, and petroleum.
+sectors: wholesale/market, construction, and energy.
 
 **Status:** demo build. Company details, photography and logo are placeholders
 pending client input — see [Placeholder content](#placeholder-content).
@@ -56,7 +56,7 @@ Adding a second `requestAnimationFrame` loop anywhere will make them compete.
 index.html          Home — the full three-sector story
 market.html         Wholesale / market
 insaat.html         Construction
-petrol.html         Petroleum & energy
+enerji.html         Energy
 iletisim.html       Contact
 404.html            Self-contained error page
 robots.txt          Crawl rules

@@ -29,9 +29,9 @@
      warm terracotta from its flame mark, MRD İnşaat is its brand blue, MRD
      Enerji its brand green. Each is deepened from the logo's own colour just
      enough to stay readable as an accent on the light paper ground. */
-  --c-market: #b5601c; /* terracotta — Cizre Park */
-  --c-insaat: #066fb2; /* brand blue — MRD İnşaat */
-  --c-petrol: #4e7d1e; /* brand green — MRD Enerji (var name kept internally) */
+  --c-market: #964d15; /* terracotta — Cizre Park (deepened to clear AA on paper) */
+  --c-insaat: #0a5f97; /* brand blue — MRD İnşaat (deepened to clear AA) */
+  --c-petrol: #3f6717; /* brand green — MRD Enerji, var name kept (deepened to clear AA) */
 
   /* Set per page via <body data-sector="market|insaat|enerji"> */
   --c-accent: var(--c-brand);

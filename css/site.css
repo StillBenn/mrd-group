@@ -29,13 +29,6 @@
   visibility: hidden;
   pointer-events: none;
 }
-.loader__mark {
-  font-family: var(--f-display);
-  font-size: clamp(1.5rem, 4vw, 2.25rem);
-  font-weight: 400;
-  letter-spacing: 0.12em;
-  color: var(--c-ink);
-}
 .loader__bar {
   width: min(42vw, 13rem);
   height: 1px;
@@ -217,14 +210,14 @@
   margin-bottom: var(--s-7);
 }
 .page-hero__logo--tall {
-  height: 7.5rem;
+  height: 6.5rem;
 }
 @media (max-width: 560px) {
   .page-hero__logo {
     height: 3.6rem;
   }
   .page-hero__logo--tall {
-    height: 6rem;
+    height: 5.25rem;
   }
 }
 
