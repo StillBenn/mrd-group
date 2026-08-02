@@ -305,6 +305,20 @@ async function initStage() {
   const lenis = initSmoothScroll();
   const scene = await initStage();
 
+  /* Overall scroll progress (0..1) for the scene's shape on sector pages.
+     Prefer Lenis' own progress (no layout read); otherwise fall back to a
+     cached scroll height so the ticker never forces a reflow. */
+  let scrollMax = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  const refreshMax = () => {
+    scrollMax = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  };
+  window.addEventListener("resize", refreshMax, { passive: true });
+  if (window.ScrollTrigger) window.ScrollTrigger.addEventListener("refresh", refreshMax);
+  const scrollProgress = () =>
+    lenis && typeof lenis.progress === "number" && !Number.isNaN(lenis.progress)
+      ? lenis.progress
+      : window.scrollY / scrollMax;
+
   /* One ticker for the whole page: the scroll is integrated first, then the
      ground is drawn against the position it just produced. */
   if (window.gsap) {
@@ -314,7 +328,10 @@ async function initStage() {
       const dt = last ? Math.min(time - last, 0.05) : 0.016;
       last = time;
       if (lenis) lenis.raf(time * 1000);
-      if (scene) scene.update(time, dt);
+      if (scene) {
+        scene.setScroll(scrollProgress());
+        scene.update(time, dt);
+      }
     });
   } else {
     let last = performance.now();
@@ -322,7 +339,10 @@ async function initStage() {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
       if (lenis) lenis.raf(now);
-      if (scene) scene.update(now / 1000, dt);
+      if (scene) {
+        scene.setScroll(scrollProgress());
+        scene.update(now / 1000, dt);
+      }
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);

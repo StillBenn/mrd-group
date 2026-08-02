@@ -22,19 +22,19 @@
    field so each chapter is carved differently; `light` is where the lamp
    rests when the pointer is still; `depth` scales how deep the carving cuts.
 
-   The `warp` steps are deliberately small (1.5 apart). Because `field()` adds
-   uWarp straight to the sample coordinate, the gap between two chapters is how
-   far the whole surface slides during one scroll section — large steps make
-   the background race past the scroll. 1.5 keeps each chapter visibly distinct
-   while the drift stays calm under the reader. */
+   The `warp` steps are small (0.9 apart) so the shape change per scroll stays
+   slow and calm. All motion is additionally low-pass filtered in update(),
+   which is what removes the sudden jumps between sections. On a sector page
+   the colour is locked to that sector's hue and the warp is driven smoothly by
+   overall scroll progress instead of these per-chapter values. */
 const CHAPTERS = {
   intro:    { color: [0.541, 0.373, 0.169], warp: 0.0, light: [ 0.26, 0.12], depth: 1.00 },
-  group:    { color: [0.541, 0.373, 0.169], warp: 1.5, light: [-0.20, 0.06], depth: 0.82 },
-  market:   { color: [0.710, 0.376, 0.110], warp: 3.0, light: [-0.30, 0.14], depth: 1.02 },
-  insaat:   { color: [0.024, 0.435, 0.698], warp: 4.5, light: [ 0.32, 0.10], depth: 1.10 },
-  enerji:   { color: [0.306, 0.490, 0.118], warp: 6.0, light: [ 0.04, 0.18], depth: 1.04 },
-  approach: { color: [0.541, 0.373, 0.169], warp: 7.5, light: [-0.24, 0.02], depth: 0.78 },
-  close:    { color: [0.541, 0.373, 0.169], warp: 9.0, light: [ 0.00, 0.16], depth: 0.92 },
+  group:    { color: [0.541, 0.373, 0.169], warp: 0.9, light: [-0.20, 0.06], depth: 0.90 },
+  market:   { color: [0.710, 0.376, 0.110], warp: 1.8, light: [-0.30, 0.14], depth: 1.02 },
+  insaat:   { color: [0.024, 0.435, 0.698], warp: 2.7, light: [ 0.32, 0.10], depth: 1.08 },
+  enerji:   { color: [0.306, 0.490, 0.118], warp: 3.6, light: [ 0.04, 0.18], depth: 1.04 },
+  approach: { color: [0.541, 0.373, 0.169], warp: 4.5, light: [-0.24, 0.02], depth: 0.88 },
+  close:    { color: [0.541, 0.373, 0.169], warp: 5.4, light: [ 0.00, 0.16], depth: 0.94 },
 };
 
 const NAMES = Object.keys(CHAPTERS);
@@ -103,7 +103,7 @@ float ridged(vec2 p) {
 
 /* The carved surface. Warped so the ridges flow instead of running straight. */
 float field(vec2 p) {
-  float t = uTime * 0.010;
+  float t = uTime * 0.006;
   vec2 w = vec2(
     noise(p * 0.85 + vec2(uWarp, t)),
     noise(p * 0.85 + vec2(t * 0.8, uWarp + 5.2))
@@ -154,7 +154,7 @@ void main() {
   /* A broad haze drifting over everything — including the calm text side, so
      the page reads as one atmosphere rather than a carved half and a blank
      half. Low frequency and low amplitude: felt, not seen. */
-  float haze = fbm(p * 0.62 + vec2(uWarp * 0.25, uTime * 0.007));
+  float haze = fbm(p * 0.62 + vec2(uWarp * 0.25, uTime * 0.004));
   col *= 0.948 + 0.104 * haze;
 
   /* Quiet vignette keeps the eye on the centre column of text. */
@@ -269,6 +269,34 @@ export function createScene(container) {
 
   const state = { from: 0, to: 0, k: 1 };
 
+  /* On a sector page the body carries data-sector; there the ground colour is
+     LOCKED to that sector's hue for the whole page (blue stays blue, green
+     stays green) instead of drifting back to the neutral bronze in the lower
+     sections. The homepage has no sector, so it keeps morphing through the
+     chapter colours as the reader scrolls. */
+  const sectorKey = document.body.dataset.sector || "";
+  const locked = Object.prototype.hasOwnProperty.call(CHAPTERS, sectorKey);
+  const lockColor = locked ? CHAPTERS[sectorKey].color : null;
+  const lockBaseWarp = locked ? CHAPTERS[sectorKey].warp : 0;
+  const LOCK_WARP_SPAN = 1.8; // how far the shape drifts across a sector page
+
+  /* Overall document scroll, 0..1, fed from main.js. Drives the shape on
+     locked pages so it flows monotonically instead of jumping between the
+     per-chapter warps (which were tuned for the homepage order). */
+  let scrollP = 0;
+
+  /* Low-pass state: the uniforms ease toward their targets every frame, so any
+     abrupt change — a section boundary, a big warp step — arrives as a smooth
+     glide, never a snap. This is the single knob that removes the hard cuts. */
+  const cur = {
+    warp: lockBaseWarp,
+    depth: 1,
+    cr: (lockColor || CHAPTERS.intro.color)[0],
+    cg: (lockColor || CHAPTERS.intro.color)[1],
+    cb: (lockColor || CHAPTERS.intro.color)[2],
+  };
+  let primed = false;
+
   /* Lamp position in the shader's aspect-corrected space: x spans ±aspect/2,
      y spans ±0.5. `has` stays false until the pointer actually moves, so
      touch devices keep the drifting lamp instead of a stuck one. */
@@ -286,32 +314,57 @@ export function createScene(container) {
     const b = CHAPTERS[NAMES[state.to]];
     const k = easeInOut(state.k);
 
-    /* Where the lamp wants to be: the chapter's rest position plus a slow
-       orbit, so the surface breathes even when nothing is moving. */
-    const driftX = Math.sin(time * 0.11) * 0.20;
-    const driftY = Math.cos(time * 0.083) * 0.10;
-    const baseX = lerp(a.light[0], b.light[0], k) + driftX;
-    const baseY = lerp(a.light[1], b.light[1], k) + driftY;
+    /* Targets. On a locked sector page the colour is fixed and the shape is
+       driven by overall scroll; on the homepage everything comes from the
+       chapter blend the ScrollTrigger sets. */
+    let tWarp, tDepth, tCol0, tCol1, tCol2, baseX, baseY;
+    if (locked) {
+      tWarp = lockBaseWarp + scrollP * LOCK_WARP_SPAN;
+      tDepth = 1.02;
+      tCol0 = lockColor[0]; tCol1 = lockColor[1]; tCol2 = lockColor[2];
+      baseX = 0.12; baseY = 0.14;
+    } else {
+      tWarp = lerp(a.warp, b.warp, k);
+      tDepth = lerp(a.depth, b.depth, k);
+      tCol0 = lerp(a.color[0], b.color[0], k);
+      tCol1 = lerp(a.color[1], b.color[1], k);
+      tCol2 = lerp(a.color[2], b.color[2], k);
+      baseX = lerp(a.light[0], b.light[0], k);
+      baseY = lerp(a.light[1], b.light[1], k);
+    }
+
+    /* A slow orbit so the surface breathes even when nothing is moving. */
+    baseX += Math.sin(time * 0.07) * 0.18;
+    baseY += Math.cos(time * 0.055) * 0.09;
 
     const targetX = pointer.has ? pointer.tx : baseX;
     const targetY = pointer.has ? pointer.ty : baseY;
 
-    /* Frame-rate independent easing: fast enough to feel attached to the
-       hand, slow enough that heavy stone does not snap around. */
-    const smooth = 1 - Math.pow(0.0000006, Math.min(dt, 0.05));
-    pointer.x = lerp(pointer.x, targetX, smooth);
-    pointer.y = lerp(pointer.y, targetY, smooth);
+    /* Lamp follows the hand quickly; heavy stone does not snap. */
+    const smoothP = 1 - Math.pow(0.0000006, Math.min(dt, 0.05));
+    pointer.x = lerp(pointer.x, targetX, smoothP);
+    pointer.y = lerp(pointer.y, targetY, smoothP);
+
+    /* Low-pass every scene parameter. First frame snaps so the page opens on
+       the right colour; after that it eases (~0.8 s settle), which is what
+       turns section boundaries into a smooth glide. */
+    if (!primed) {
+      cur.warp = tWarp; cur.depth = tDepth;
+      cur.cr = tCol0; cur.cg = tCol1; cur.cb = tCol2;
+      primed = true;
+    }
+    const s = 1 - Math.pow(0.05, Math.min(dt, 0.05));
+    cur.warp = lerp(cur.warp, tWarp, s);
+    cur.depth = lerp(cur.depth, tDepth, s);
+    cur.cr = lerp(cur.cr, tCol0, s);
+    cur.cg = lerp(cur.cg, tCol1, s);
+    cur.cb = lerp(cur.cb, tCol2, s);
 
     gl.uniform1f(u.uTime, time);
     gl.uniform2f(u.uPointer, pointer.x, pointer.y);
-    gl.uniform3f(
-      u.uColor,
-      lerp(a.color[0], b.color[0], k),
-      lerp(a.color[1], b.color[1], k),
-      lerp(a.color[2], b.color[2], k)
-    );
-    gl.uniform1f(u.uWarp, lerp(a.warp, b.warp, k));
-    gl.uniform1f(u.uDepth, lerp(a.depth, b.depth, k));
+    gl.uniform3f(u.uColor, cur.cr, cur.cg, cur.cb);
+    gl.uniform1f(u.uWarp, cur.warp);
+    gl.uniform1f(u.uDepth, cur.depth);
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
@@ -331,6 +384,12 @@ export function createScene(container) {
 
     indexOf(name) {
       return NAMES.indexOf(name);
+    },
+
+    /* Overall document scroll progress (0..1); drives the shape on locked
+       sector pages. Harmless on the homepage (ignored there). */
+    setScroll(p) {
+      scrollP = p < 0 ? 0 : p > 1 ? 1 : p;
     },
 
     update,
