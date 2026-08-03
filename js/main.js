@@ -482,7 +482,10 @@ function initCarousel() {
     root.appendChild(next);
 
     const slides = [...track.children];
-    let active = 0;
+    /* Start on the second slide so the centre image always has a neighbour on
+       BOTH sides — resting on index 0 leaves the left half empty and reads as
+       a layout mistake. The two extreme ends stay reachable by arrow / drag. */
+    let active = slides.length > 2 ? 1 : 0;
     let dragging = false;
     let moved = false;
     let startX = 0;
@@ -562,9 +565,13 @@ function initCarousel() {
     /* Gentle autoplay, ping-pong, pauses on hover / interaction */
     let dir = 1;
     let timer = null;
+    /* Auto-play ping-pongs between the second and second-to-last slide so it
+       never rests on a bare-sided end; the true ends stay manual-only. */
+    const autoMin = slides.length > 2 ? 1 : 0;
+    const autoMax = slides.length > 2 ? slides.length - 2 : slides.length - 1;
     const tick = () => {
-      if (active >= slides.length - 1) dir = -1;
-      else if (active <= 0) dir = 1;
+      if (active >= autoMax) dir = -1;
+      else if (active <= autoMin) dir = 1;
       setActive(active + dir);
     };
     const startAuto = () => {
