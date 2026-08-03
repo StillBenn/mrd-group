@@ -127,6 +127,14 @@ If a custom domain is added later, update in this order:
 3. `sitemap.xml` and `robots.txt`
 4. `404.html` links
 
+## Gallery photos
+
+`img/gallery/<sector>-01…12.jpg` are self-hosted **sample** photos (retail /
+construction / solar) sourced from Unsplash under the Unsplash License (free
+commercial use, no attribution required). They are placeholders to show the
+carousel with real imagery — replace them with the company's own photos (via
+the `/panel` tool or by dropping files into `img/gallery/` with the same names).
+
 ## Placeholder content
 
 Everything below is provisional and must be replaced before the site is treated

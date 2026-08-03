@@ -1273,18 +1273,20 @@ body.has-cursor .map-frame * {
 .carousel__viewport {
   overflow: hidden;
   cursor: grab;
+  /* Only a whisper of edge softening — the neighbours must stay clearly
+     visible as half-slides, not fade away. */
   -webkit-mask-image: linear-gradient(
     90deg,
     transparent,
-    #000 9%,
-    #000 91%,
+    #000 3%,
+    #000 97%,
     transparent
   );
   mask-image: linear-gradient(
     90deg,
     transparent,
-    #000 9%,
-    #000 91%,
+    #000 3%,
+    #000 97%,
     transparent
   );
 }
@@ -1300,7 +1302,9 @@ body.has-cursor .map-frame * {
   padding-block: var(--s-5);
 }
 .carousel__slide {
-  flex: 0 0 clamp(17rem, 54vw, 42rem);
+  /* The centre slide is deliberately under half the viewport so the two
+     neighbours clearly show their inner halves on each side (the 3-up look). */
+  flex: 0 0 clamp(16rem, 44vw, 34rem);
   position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
@@ -1310,9 +1314,9 @@ body.has-cursor .map-frame * {
   display: grid;
   place-content: center;
   color: var(--c-ink-faint);
-  filter: blur(6px);
-  opacity: 0.4;
-  transform: scale(0.84);
+  filter: blur(5px);
+  opacity: 0.58;
+  transform: scale(0.82);
   transition: filter 0.7s var(--e-out), opacity 0.7s var(--e-out),
     transform 0.7s var(--e-out), box-shadow 0.7s var(--e-out);
 }

@@ -423,6 +423,14 @@ function initCarousel() {
 
   const TOTAL = 12;
 
+  /* Default sample photos shipped per sector (self-hosted). Admin uploads from
+     the panel take the leading slots and push these back. */
+  const defaults = [];
+  for (let i = 1; i <= TOTAL; i++) {
+    defaults.push("./img/gallery/" + sector + "-" + String(i).padStart(2, "0") + ".jpg");
+  }
+  const sources = custom.concat(defaults).slice(0, TOTAL);
+
   roots.forEach((root) => {
     root.setAttribute("role", "group");
     root.setAttribute("aria-roledescription", "galeri");
@@ -439,11 +447,13 @@ function initCarousel() {
       slide.type = "button";
       slide.className = "carousel__slide";
       slide.setAttribute("aria-label", label + " görseli " + (i + 1));
-      if (custom[i]) {
+      if (sources[i]) {
         slide.setAttribute("data-caption", "");
         const img = document.createElement("img");
-        img.src = custom[i];
+        img.src = sources[i];
         img.alt = label + " görseli " + (i + 1);
+        img.loading = "lazy";
+        img.decoding = "async";
         slide.appendChild(img);
       } else {
         slide.setAttribute("data-caption", label + " görseli " + (i + 1));
