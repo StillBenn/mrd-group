@@ -1263,6 +1263,114 @@ body.has-cursor .map-frame * {
 }
 
 /* --------------------------------------------------------------------------
+   14e. Coverflow carousel — centre slide sharp and full; neighbours peek in
+   blurred and scaled back. Built by initCarousel(); 12 slides per sector.
+   -------------------------------------------------------------------------- */
+.carousel {
+  position: relative;
+  margin-top: var(--s-5);
+}
+.carousel__viewport {
+  overflow: hidden;
+  cursor: grab;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 9%,
+    #000 91%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 9%,
+    #000 91%,
+    transparent
+  );
+}
+.carousel__viewport:active {
+  cursor: grabbing;
+}
+.carousel__track {
+  display: flex;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  transition: transform 0.7s var(--e-in-out);
+  will-change: transform;
+  touch-action: pan-y;
+  padding-block: var(--s-5);
+}
+.carousel__slide {
+  flex: 0 0 clamp(17rem, 54vw, 42rem);
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  background: var(--c-paper-3);
+  display: grid;
+  place-content: center;
+  color: var(--c-ink-faint);
+  filter: blur(6px);
+  opacity: 0.4;
+  transform: scale(0.84);
+  transition: filter 0.7s var(--e-out), opacity 0.7s var(--e-out),
+    transform 0.7s var(--e-out), box-shadow 0.7s var(--e-out);
+}
+.carousel__slide.is-active {
+  filter: none;
+  opacity: 1;
+  transform: scale(1);
+  cursor: zoom-in;
+  box-shadow: 0 30px 64px -34px rgba(18, 18, 15, 0.5);
+}
+.carousel__slide img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.carousel__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  z-index: 3;
+  transition: background-color var(--d-fast) var(--e-out),
+    color var(--d-fast) var(--e-out), opacity var(--d-fast) var(--e-out);
+}
+.carousel__nav:hover {
+  background: var(--c-ink);
+  color: var(--c-paper);
+  border-color: var(--c-ink);
+}
+.carousel__nav:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+.carousel__nav--prev {
+  left: clamp(0.25rem, 2vw, 1rem);
+}
+.carousel__nav--next {
+  right: clamp(0.25rem, 2vw, 1rem);
+}
+@media (prefers-reduced-motion: reduce) {
+  .carousel__slide {
+    transition: none;
+  }
+  .carousel__track {
+    transition: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
    15. Reveal system — JS flips a class, CSS owns the animation.
    -------------------------------------------------------------------------- */
 [data-reveal] {

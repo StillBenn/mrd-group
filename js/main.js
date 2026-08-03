@@ -395,46 +395,194 @@ function initCountUp() {
 }
 
 /* --------------------------------------------------------------------------
-   Custom gallery images — the admin panel (/panel) stores uploaded images in
-   localStorage per sector; here we inject them at the front of that sector's
-   gallery. This is the demo path; swapping localStorage for a real backend
-   (a Git-based CMS on a custom domain) changes only the read below.
-   -------------------------------------------------------------------------- */
-function initGalleryCustom() {
-  const sector = document.body.dataset.sector || "";
-  const gallery = $(".gallery");
-  if (!sector || !gallery) return;
-  let items = [];
-  try {
-    items = JSON.parse(localStorage.getItem("mrd.gallery." + sector) || "[]");
-  } catch (e) {
-    items = [];
-  }
-  if (!Array.isArray(items) || !items.length) return;
+   Coverflow carousel — 12 slides per sector. The centre slide is sharp and
+   full; its neighbours peek in from the sides, blurred and scaled back. Slides
+   advance on arrows, drag/swipe, clicking a side slide, or a gentle autoplay;
+   the centre slide opens in the lightbox.
 
-  const frag = document.createDocumentFragment();
-  items.forEach((data, i) => {
-    if (typeof data !== "string" || !data.startsWith("data:image")) return;
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "gallery__item is-custom";
-    b.setAttribute("data-caption", "Eklenen görsel " + (i + 1));
-    const img = document.createElement("img");
-    img.src = data;
-    img.alt = "Eklenen görsel " + (i + 1);
-    b.appendChild(img);
-    frag.appendChild(b);
+   Real photos come from the admin panel (localStorage per sector) and take the
+   leading slots; the rest stay as placeholders until filled.
+   -------------------------------------------------------------------------- */
+function initCarousel() {
+  const roots = $$("[data-carousel]");
+  if (!roots.length) return;
+  const sector = document.body.dataset.sector || "";
+  const label = sector === "market" ? "Cizre Park" : sector === "insaat" ? "Proje" : "Görsel";
+  const svg =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="11" r="2"/><path d="M3 17l5-4 4 3 3-2 6 5"/></svg>';
+
+  let custom = [];
+  try {
+    custom = JSON.parse(localStorage.getItem("mrd.gallery." + sector) || "[]");
+  } catch (e) {
+    custom = [];
+  }
+  custom = (Array.isArray(custom) ? custom : []).filter(
+    (d) => typeof d === "string" && d.startsWith("data:image")
+  );
+
+  const TOTAL = 12;
+
+  roots.forEach((root) => {
+    const viewport = document.createElement("div");
+    viewport.className = "carousel__viewport";
+    const track = document.createElement("div");
+    track.className = "carousel__track";
+    viewport.appendChild(track);
+
+    for (let i = 0; i < TOTAL; i++) {
+      const slide = document.createElement("button");
+      slide.type = "button";
+      slide.className = "carousel__slide";
+      slide.setAttribute("aria-label", label + " görseli " + (i + 1));
+      if (custom[i]) {
+        slide.setAttribute("data-caption", "");
+        const img = document.createElement("img");
+        img.src = custom[i];
+        img.alt = label + " görseli " + (i + 1);
+        slide.appendChild(img);
+      } else {
+        slide.setAttribute("data-caption", label + " görseli " + (i + 1));
+        slide.innerHTML =
+          '<span class="gallery__ph">' + svg + "<span>" + label + " " +
+          String(i + 1).padStart(2, "0") + "</span></span>";
+      }
+      track.appendChild(slide);
+    }
+
+    const prev = document.createElement("button");
+    prev.type = "button";
+    prev.className = "carousel__nav carousel__nav--prev";
+    prev.setAttribute("aria-label", "Önceki");
+    prev.innerHTML =
+      '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 5l-7 7 7 7"/></svg>';
+    const next = document.createElement("button");
+    next.type = "button";
+    next.className = "carousel__nav carousel__nav--next";
+    next.setAttribute("aria-label", "Sonraki");
+    next.innerHTML =
+      '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5l7 7-7 7"/></svg>';
+
+    root.appendChild(viewport);
+    root.appendChild(prev);
+    root.appendChild(next);
+
+    const slides = [...track.children];
+    let active = 0;
+    let dragging = false;
+    let moved = false;
+    let startX = 0;
+    let baseOffset = 0;
+    let step = 0;
+
+    const measure = () => {
+      const r = slides[0].getBoundingClientRect();
+      const gap = parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap) || 0;
+      step = r.width + gap;
+    };
+
+    const centeredOffset = () => {
+      const r = slides[0].getBoundingClientRect();
+      return viewport.clientWidth / 2 - (active * step + r.width / 2);
+    };
+
+    const layout = (withTransition) => {
+      track.style.transition = withTransition ? "" : "none";
+      track.style.transform = "translateX(" + centeredOffset() + "px)";
+      slides.forEach((s, i) => s.classList.toggle("is-active", i === active));
+      prev.disabled = active === 0;
+      next.disabled = active === slides.length - 1;
+    };
+
+    const setActive = (i) => {
+      active = Math.max(0, Math.min(slides.length - 1, i));
+      layout(true);
+    };
+
+    measure();
+    layout(false);
+
+    prev.addEventListener("click", () => setActive(active - 1));
+    next.addEventListener("click", () => setActive(active + 1));
+
+    slides.forEach((slide, i) => {
+      slide.addEventListener("click", (e) => {
+        if (moved) {
+          e.stopPropagation();
+          return;
+        }
+        if (i !== active) {
+          e.stopPropagation(); // do not open the lightbox for a side slide
+          setActive(i);
+        }
+        // active slide falls through to the delegated lightbox handler
+      });
+    });
+
+    /* Drag / swipe */
+    viewport.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      moved = false;
+      startX = e.clientX;
+      measure();
+      baseOffset = centeredOffset();
+      track.style.transition = "none";
+      viewport.setPointerCapture && viewport.setPointerCapture(e.pointerId);
+    });
+    viewport.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) moved = true;
+      track.style.transform = "translateX(" + (baseOffset + dx) + "px)";
+    });
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4 && step) setActive(active - Math.round(dx / step));
+      else layout(true);
+    };
+    viewport.addEventListener("pointerup", endDrag);
+    viewport.addEventListener("pointercancel", endDrag);
+
+    /* Gentle autoplay, ping-pong, pauses on hover / interaction */
+    let dir = 1;
+    let timer = null;
+    const tick = () => {
+      if (active >= slides.length - 1) dir = -1;
+      else if (active <= 0) dir = 1;
+      setActive(active + dir);
+    };
+    const startAuto = () => {
+      if (reduceMotion || timer) return;
+      timer = setInterval(tick, 4200);
+    };
+    const stopAuto = () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    root.addEventListener("pointerenter", stopAuto);
+    root.addEventListener("pointerleave", startAuto);
+    root.addEventListener("focusin", stopAuto);
+    [prev, next].forEach((b) => b.addEventListener("click", () => { stopAuto(); }));
+    startAuto();
+
+    window.addEventListener("resize", () => {
+      measure();
+      layout(false);
+    }, { passive: true });
   });
-  gallery.insertBefore(frag, gallery.firstChild);
 }
 
 /* --------------------------------------------------------------------------
-   Lightbox — clicking a gallery tile opens it full-screen. Works with a real
-   <img> inside the tile, or falls back to the tile's caption for placeholders.
-   Click handling is delegated, so tiles injected after load work too.
+   Lightbox — clicking the centre carousel slide opens it full-screen. Works
+   with a real <img> inside the slide, or falls back to the slide's caption for
+   placeholders. Click handling is delegated.
    -------------------------------------------------------------------------- */
 function initLightbox() {
-  if (!$(".gallery__item")) return;
+  if (!$(".carousel__slide")) return;
 
   const box = document.createElement("div");
   box.className = "lightbox";
@@ -480,7 +628,7 @@ function initLightbox() {
   };
 
   document.addEventListener("click", (e) => {
-    const tile = e.target.closest(".gallery__item");
+    const tile = e.target.closest(".carousel__slide");
     if (tile) {
       open(tile);
       return;
@@ -644,7 +792,7 @@ async function initStage() {
 
   initReveals();
   initCountUp();
-  initGalleryCustom();
+  initCarousel();
   initLightbox();
   if (window.ScrollTrigger) window.ScrollTrigger.refresh();
   loader.finish();
