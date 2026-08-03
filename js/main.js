@@ -208,7 +208,11 @@ function initHeader() {
    Scroll reveals — CSS owns the animation, JS only flips a class.
    -------------------------------------------------------------------------- */
 function initReveals() {
-  const items = $$("[data-reveal], .split-line, .reveal-media");
+  /* The hero has its own orchestrated entrance (initHeroIntro) that plays as
+     the loader curtain lifts, so it is excluded here. */
+  const items = $$("[data-reveal], .split-line, .reveal-media").filter(
+    (el) => !el.closest(".hero")
+  );
   if (!items.length) return;
 
   if (reduceMotion || !("IntersectionObserver" in window)) {
@@ -235,6 +239,90 @@ function initReveals() {
     }
     io.observe(el);
   });
+}
+
+/* --------------------------------------------------------------------------
+   Hero entrance — one orchestrated sequence played as the loader curtain
+   lifts, instead of the hero fading in on its own the moment the page mounts.
+   Returns a play() the boot sequence calls once loading is done. CSS still
+   owns the animation; JS only sets the per-element delay and flips the class.
+   -------------------------------------------------------------------------- */
+function initHeroIntro() {
+  const hero = $(".hero");
+  if (!hero) return () => {};
+
+  const seq = [
+    hero.querySelector(".hero__eyebrow"),
+    ...$$(".split-line", hero),
+    hero.querySelector(".hero__lead"),
+    hero.querySelector(".scroll-cue"),
+  ].filter(Boolean);
+
+  /* Staggered so the eyebrow leads, the three sector words fall in turn, then
+     the supporting copy — a read order, not a single pop. */
+  seq.forEach((el, i) => el.style.setProperty("--reveal-delay", (i * 0.1).toFixed(2) + "s"));
+
+  return () => seq.forEach((el) => el.classList.add("is-in"));
+}
+
+/* --------------------------------------------------------------------------
+   Chapter rail — a hairline index on the right showing which of the seven
+   story chapters the reader is in, with a click to jump. Built from the same
+   [data-scene] sections the ground reads, so the two never disagree. Homepage
+   only (needs several chapters); desktop only (hidden by CSS under 1024px).
+   -------------------------------------------------------------------------- */
+function initChapterRail(lenis) {
+  const sections = $$("[data-scene]");
+  if (sections.length < 4) return; // the multi-chapter homepage story only
+  if (reduceMotion || !("IntersectionObserver" in window)) return;
+
+  const LABELS = {
+    intro: "Giriş", group: "Kurumsal", market: "Market", insaat: "İnşaat",
+    enerji: "Enerji", approach: "Yaklaşım", close: "İletişim",
+  };
+  const COLORS = {
+    market: "var(--c-market)", insaat: "var(--c-insaat)", enerji: "var(--c-petrol)",
+  };
+
+  const rail = document.createElement("nav");
+  rail.className = "chapter-rail";
+  rail.setAttribute("aria-label", "Bölüm göstergesi");
+
+  const items = sections.map((sec) => {
+    const key = sec.dataset.scene;
+    if (!sec.id) sec.id = "bolum-" + key;
+    const label = LABELS[key] || key;
+    const a = document.createElement("a");
+    a.className = "chapter-rail__item";
+    a.href = "#" + sec.id;
+    a.style.setProperty("--rail-c", COLORS[key] || "var(--c-brand)");
+    a.setAttribute("aria-label", label + " bölümüne git");
+    a.innerHTML =
+      '<span class="chapter-rail__label">' + label + "</span>" +
+      '<span class="chapter-rail__dot" aria-hidden="true"></span>';
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (lenis && lenis.scrollTo) lenis.scrollTo(sec, { offset: -70 });
+      else sec.scrollIntoView({ behavior: "smooth" });
+    });
+    rail.appendChild(a);
+    return { sec, a };
+  });
+
+  document.body.appendChild(rail);
+  requestAnimationFrame(() => rail.classList.add("is-ready"));
+
+  const setActive = (sec) =>
+    items.forEach((it) => it.a.classList.toggle("is-active", it.sec === sec));
+
+  /* A section counts as current only while it straddles the screen's middle
+     band, so exactly one node is ever active. */
+  const io = new IntersectionObserver(
+    (entries) => entries.forEach((en) => en.isIntersecting && setActive(en.target)),
+    { rootMargin: "-45% 0px -45% 0px", threshold: 0 }
+  );
+  items.forEach((it) => io.observe(it.sec));
+  setActive(sections[0]);
 }
 
 /* --------------------------------------------------------------------------
@@ -450,10 +538,14 @@ function initCarousel() {
       if (sources[i]) {
         slide.setAttribute("data-caption", "");
         const img = document.createElement("img");
-        img.src = sources[i];
         img.alt = label + " görseli " + (i + 1);
         img.loading = "lazy";
         img.decoding = "async";
+        /* Resolve from soft over-scan once decoded, so real photos feel placed
+           rather than popped (CSS owns the transition). */
+        img.addEventListener("load", () => img.classList.add("is-loaded"), { once: true });
+        img.src = sources[i];
+        if (img.complete && img.naturalWidth) img.classList.add("is-loaded");
         slide.appendChild(img);
       } else {
         slide.setAttribute("data-caption", label + " görseli " + (i + 1));
@@ -744,6 +836,17 @@ async function initStage() {
   document.body.classList.add("is-loading");
   applyConfig();
 
+  /* Static paper grain over the whole page — gives the flat light ground the
+     tooth of real paper stock. One composited layer, no per-frame cost. */
+  const grain = document.createElement("div");
+  grain.className = "paper-grain";
+  grain.setAttribute("aria-hidden", "true");
+  document.body.appendChild(grain);
+
+  /* Arm the hero entrance now (sets per-line delays; the hero stays hidden
+     until play() runs as the loader lifts). */
+  const playHero = initHeroIntro();
+
   if (window.gsap && window.ScrollTrigger) {
     window.gsap.registerPlugin(window.ScrollTrigger);
   }
@@ -820,6 +923,11 @@ async function initStage() {
   initCountUp();
   initCarousel();
   initLightbox();
+  initChapterRail(lenis);
   if (window.ScrollTrigger) window.ScrollTrigger.refresh();
   loader.finish();
+
+  /* Play the hero entrance as the curtain rises — a short beat so the lift is
+     already underway and the two motions read as one. */
+  setTimeout(playHero, reduceMotion ? 0 : 500);
 })();

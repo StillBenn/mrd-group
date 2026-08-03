@@ -1412,3 +1412,124 @@ body.has-cursor .map-frame * {
     transform: none !important;
   }
 }
+
+/* ==========================================================================
+   16. Premium layer — paper grain, chapter rail, gallery reveal.
+   Added in the studio-grade pass. No new WebGL and no frame-cost properties:
+   only transform / opacity are animated, and the grain is a single static
+   composited layer. Everything here is progressive enhancement, injected by
+   js/main.js, so a JS failure simply drops it.
+   -------------------------------------------------------------------------- */
+
+/* 16a. Paper grain — a fine static fibre texture over the whole page so the
+   light ground reads as real paper stock rather than a flat fill. One layer,
+   no animation, pointer-transparent, whisper-low opacity so text stays crisp. */
+.paper-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* 16b. Chapter rail — a hairline index on the right marking where the reader
+   is in the seven-chapter story, and a way to jump. Desktop only; the active
+   node fills with that chapter's own colour so it echoes the ground. */
+.chapter-rail {
+  position: fixed;
+  right: clamp(0.9rem, 2.4vw, 2rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  opacity: 0;
+  transition: opacity var(--d-base) var(--e-out);
+}
+.chapter-rail.is-ready {
+  opacity: 1;
+}
+.chapter-rail__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  color: var(--c-ink-faint);
+}
+.chapter-rail__label {
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(6px);
+  transition: opacity var(--d-fast) var(--e-out),
+    transform var(--d-fast) var(--e-out), color var(--d-fast) var(--e-out);
+}
+.chapter-rail__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--c-line);
+  background: transparent;
+  transition: transform var(--d-base) var(--e-out),
+    background-color var(--d-base) var(--e-out),
+    border-color var(--d-base) var(--e-out);
+}
+.chapter-rail__item:hover .chapter-rail__label,
+.chapter-rail__item:focus-visible .chapter-rail__label,
+.chapter-rail__item.is-active .chapter-rail__label {
+  opacity: 1;
+  transform: none;
+}
+.chapter-rail__item.is-active .chapter-rail__label {
+  color: var(--c-ink);
+}
+.chapter-rail__item:hover .chapter-rail__dot,
+.chapter-rail__item:focus-visible .chapter-rail__dot {
+  border-color: var(--rail-c, var(--c-brand));
+  transform: scale(1.25);
+}
+.chapter-rail__item.is-active .chapter-rail__dot {
+  background: var(--rail-c, var(--c-brand));
+  border-color: var(--rail-c, var(--c-brand));
+  transform: scale(1.35);
+}
+body.menu-open .chapter-rail {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (max-width: 1024px) {
+  .chapter-rail {
+    display: none;
+  }
+}
+
+/* 16c. Gallery reveal — filled carousel images resolve from a soft over-scan
+   instead of popping, so real photos feel placed, not loaded. transform +
+   opacity only; fires once on image load. */
+.carousel__slide img {
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity var(--d-base) var(--e-out),
+    transform var(--d-slow) var(--e-out);
+}
+.carousel__slide img.is-loaded {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chapter-rail__label,
+  .chapter-rail__dot {
+    transition: none;
+  }
+  .carousel__slide img {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
