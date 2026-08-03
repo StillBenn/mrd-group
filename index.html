@@ -157,21 +157,77 @@
         </div>
       </div>
 
-      <!-- Only verified facts appear here. No invented statistics. -->
-      <div class="facts">
-        <div data-reveal>
-          <p class="fact__value">Üç</p>
-          <p class="fact__label">Faaliyet sektörü</p>
+      <!-- DEMO figures for the pitch — count up on scroll. Replace with the
+           client's real numbers (single source below). "3 sektör" is real;
+           the others are placeholders until confirmed. -->
+      <div class="stats" aria-label="Rakamlarla MRD Group">
+        <div class="stat" data-reveal>
+          <p class="stat__value"><span data-count="20">0</span><span class="stat__suffix">+</span></p>
+          <p class="stat__label">Yıl tecrübe</p>
         </div>
-        <div data-reveal>
-          <p class="fact__value">Tek</p>
-          <p class="fact__label">Yönetim çatısı</p>
+        <div class="stat" data-reveal>
+          <p class="stat__value"><span data-count="3">0</span></p>
+          <p class="stat__label">Faaliyet sektörü</p>
         </div>
-        <div data-reveal>
-          <p class="fact__value">Gaziantep</p>
-          <p class="fact__label">Merkez</p>
+        <div class="stat" data-reveal>
+          <p class="stat__value"><span data-count="120">0</span><span class="stat__suffix">+</span></p>
+          <p class="stat__label">Tamamlanan iş</p>
+        </div>
+        <div class="stat" data-reveal>
+          <p class="stat__value"><span data-count="350">0</span><span class="stat__suffix">+</span></p>
+          <p class="stat__label">Çalışan</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ TARİHÇE ============ -->
+  <section class="section" id="tarihce">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 class="t-h2" data-reveal>Kısaca yolculuğumuz</h2>
+        <p class="t-label" data-reveal>Tarihçe · örnek</p>
+      </div>
+      <ol class="timeline">
+        <li class="timeline__item" data-reveal>
+          <span class="timeline__year">2005</span>
+          <div class="timeline__body">
+            <h3>Kuruluş</h3>
+            <p>MRD Group, Gaziantep'te ticaret alanında faaliyetlerine başladı.</p>
+          </div>
+        </li>
+        <li class="timeline__item" data-reveal>
+          <span class="timeline__year">2011</span>
+          <div class="timeline__body">
+            <h3>Market</h3>
+            <p>Perakende ve alışveriş yatırımıyla market alanına adım atıldı.</p>
+          </div>
+        </li>
+        <li class="timeline__item" data-reveal>
+          <span class="timeline__year">2016</span>
+          <div class="timeline__body">
+            <h3>İnşaat</h3>
+            <p>Konut ve ticari yapı projeleriyle inşaat sektörüne girildi.</p>
+          </div>
+        </li>
+        <li class="timeline__item" data-reveal>
+          <span class="timeline__year">2021</span>
+          <div class="timeline__body">
+            <h3>Enerji</h3>
+            <p>Enerji tedariki ve çözümleriyle üçüncü sektör eklendi.</p>
+          </div>
+        </li>
+        <li class="timeline__item" data-reveal>
+          <span class="timeline__year">Bugün</span>
+          <div class="timeline__body">
+            <h3>Tek çatı</h3>
+            <p>Üç sektör, tek yönetim anlayışıyla aynı standartta yürütülüyor.</p>
+          </div>
+        </li>
+      </ol>
+      <p class="t-small" style="color: var(--c-ink-faint); margin-top: var(--s-6)">
+        Tarihçe örnek verilerle gösterilmiştir; gerçek kilometre taşlarıyla güncellenecektir.
+      </p>
     </div>
   </section>
 

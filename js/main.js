@@ -352,6 +352,111 @@ function initPageTransitions() {
 }
 
 /* --------------------------------------------------------------------------
+   Count-up figures — numbers climb from zero the first time they scroll in.
+   -------------------------------------------------------------------------- */
+function initCountUp() {
+  const nums = $$("[data-count]");
+  if (!nums.length) return;
+
+  const settle = (el) => {
+    el.textContent = el.dataset.count;
+  };
+  if (reduceMotion || !("IntersectionObserver" in window)) {
+    nums.forEach(settle);
+    return;
+  }
+
+  const run = (el) => {
+    const target = parseFloat(el.dataset.count) || 0;
+    const dur = 1500;
+    let start = null;
+    const step = (now) => {
+      if (start === null) start = now;
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased).toString();
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = target.toString();
+    };
+    requestAnimationFrame(step);
+  };
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        run(e.target);
+        io.unobserve(e.target);
+      });
+    },
+    { threshold: 0.5 }
+  );
+  nums.forEach((n) => io.observe(n));
+}
+
+/* --------------------------------------------------------------------------
+   Lightbox — clicking a gallery tile opens it full-screen. Works with a real
+   <img> inside the tile, or falls back to the tile's caption for placeholders.
+   -------------------------------------------------------------------------- */
+function initLightbox() {
+  const tiles = $$(".gallery__item");
+  if (!tiles.length) return;
+
+  const box = document.createElement("div");
+  box.className = "lightbox";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-modal", "true");
+  box.setAttribute("aria-hidden", "true");
+  box.innerHTML =
+    '<button class="lightbox__close" type="button" aria-label="Kapat">' +
+    '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+    "</button>" +
+    '<figure class="lightbox__panel"><figcaption class="lightbox__caption"></figcaption></figure>';
+  document.body.appendChild(box);
+
+  const panel = box.querySelector(".lightbox__panel");
+  const caption = box.querySelector(".lightbox__caption");
+  let lastFocus = null;
+
+  const open = (tile) => {
+    const img = tile.querySelector("img");
+    panel.querySelectorAll("img").forEach((n) => n.remove());
+    const text = tile.getAttribute("data-caption") || "Görsel eklenecek";
+    if (img) {
+      const big = document.createElement("img");
+      big.src = img.currentSrc || img.src;
+      big.alt = img.alt || "";
+      panel.insertBefore(big, caption);
+      caption.textContent = "";
+    } else {
+      caption.textContent = text;
+    }
+    lastFocus = document.activeElement;
+    box.classList.add("is-open");
+    box.setAttribute("aria-hidden", "false");
+    document.documentElement.style.overflow = "hidden";
+    box.querySelector(".lightbox__close").focus();
+  };
+
+  const close = () => {
+    box.classList.remove("is-open");
+    box.setAttribute("aria-hidden", "true");
+    document.documentElement.style.overflow = "";
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  };
+
+  tiles.forEach((tile) => {
+    tile.addEventListener("click", () => open(tile));
+  });
+  box.addEventListener("click", (e) => {
+    if (e.target === box || e.target.closest(".lightbox__close")) close();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && box.classList.contains("is-open")) close();
+  });
+}
+
+/* --------------------------------------------------------------------------
    Floating WhatsApp — appears once the hero is behind the reader.
    -------------------------------------------------------------------------- */
 function initFloatingCta() {
@@ -502,6 +607,8 @@ async function initStage() {
   ]);
 
   initReveals();
+  initCountUp();
+  initLightbox();
   if (window.ScrollTrigger) window.ScrollTrigger.refresh();
   loader.finish();
 })();
