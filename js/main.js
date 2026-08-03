@@ -395,12 +395,46 @@ function initCountUp() {
 }
 
 /* --------------------------------------------------------------------------
+   Custom gallery images — the admin panel (/panel) stores uploaded images in
+   localStorage per sector; here we inject them at the front of that sector's
+   gallery. This is the demo path; swapping localStorage for a real backend
+   (a Git-based CMS on a custom domain) changes only the read below.
+   -------------------------------------------------------------------------- */
+function initGalleryCustom() {
+  const sector = document.body.dataset.sector || "";
+  const gallery = $(".gallery");
+  if (!sector || !gallery) return;
+  let items = [];
+  try {
+    items = JSON.parse(localStorage.getItem("mrd.gallery." + sector) || "[]");
+  } catch (e) {
+    items = [];
+  }
+  if (!Array.isArray(items) || !items.length) return;
+
+  const frag = document.createDocumentFragment();
+  items.forEach((data, i) => {
+    if (typeof data !== "string" || !data.startsWith("data:image")) return;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "gallery__item is-custom";
+    b.setAttribute("data-caption", "Eklenen görsel " + (i + 1));
+    const img = document.createElement("img");
+    img.src = data;
+    img.alt = "Eklenen görsel " + (i + 1);
+    b.appendChild(img);
+    frag.appendChild(b);
+  });
+  gallery.insertBefore(frag, gallery.firstChild);
+}
+
+/* --------------------------------------------------------------------------
    Lightbox — clicking a gallery tile opens it full-screen. Works with a real
    <img> inside the tile, or falls back to the tile's caption for placeholders.
+   Click handling is delegated, so tiles injected after load work too.
    -------------------------------------------------------------------------- */
 function initLightbox() {
-  const tiles = $$(".gallery__item");
-  if (!tiles.length) return;
+  if (!$(".gallery__item")) return;
 
   const box = document.createElement("div");
   box.className = "lightbox";
@@ -445,10 +479,12 @@ function initLightbox() {
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   };
 
-  tiles.forEach((tile) => {
-    tile.addEventListener("click", () => open(tile));
-  });
-  box.addEventListener("click", (e) => {
+  document.addEventListener("click", (e) => {
+    const tile = e.target.closest(".gallery__item");
+    if (tile) {
+      open(tile);
+      return;
+    }
     if (e.target === box || e.target.closest(".lightbox__close")) close();
   });
   document.addEventListener("keydown", (e) => {
@@ -608,6 +644,7 @@ async function initStage() {
 
   initReveals();
   initCountUp();
+  initGalleryCustom();
   initLightbox();
   if (window.ScrollTrigger) window.ScrollTrigger.refresh();
   loader.finish();

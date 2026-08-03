@@ -75,6 +75,22 @@ img/                Logo mark, social preview image, sector artwork
 fonts/              Self-hosted woff2 files
 ```
 
+## Admin panel (demo)
+
+`panel/index.html` is a standalone tool reachable at `…/mrd-group/panel/`. It
+lets an editor add gallery images per sector (market / inşaat / enerji). In this
+demo the images are downscaled and stored in the browser's `localStorage`
+(`mrd.gallery.<sector>`); the sector pages read that key on load and inject the
+images at the front of their gallery (`initGalleryCustom` in `js/main.js`).
+
+Because it is one directory below the site root, `panel/index.html` uses
+repo-root asset paths and inlines its own styles — the only file besides
+`404.html` allowed to do so.
+
+Demo storage is per-browser. To make uploads persist for every visitor, the
+same UI connects to a Git-based CMS once a custom domain and authentication are
+in place; only the storage read/write layer changes.
+
 ## Path convention
 
 The site is published in a **sub-directory** (`https://<user>.github.io/mrd-group/`),
