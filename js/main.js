@@ -112,6 +112,18 @@ function initCursor() {
 
   document.body.classList.add("has-cursor");
 
+  /* Cross-navigation cards are links; give them the "İncele" label without
+     editing every page's markup. */
+  $$(".cross__item").forEach((el) => {
+    if (!el.hasAttribute("data-cursor")) el.setAttribute("data-cursor", "İncele");
+  });
+
+  /* A small label rides with the dot over elements that declare data-cursor
+     (e.g. media wells say "İncele"); it stays empty otherwise. */
+  const label = document.createElement("span");
+  label.className = "cursor__label";
+  el.appendChild(label);
+
   /* Regions painted in the same near-black as the dot; over these it flips
      to paper so it never disappears. */
   const darkRegions = ".site-footer, .wa-float";
@@ -129,12 +141,23 @@ function initCursor() {
 
   const hoverables = "a, button, [data-cursor]";
   document.addEventListener("pointerover", (e) => {
-    if (e.target.closest(hoverables)) el.classList.add("is-hover");
-    if (e.target.closest(".map-frame")) el.classList.add("is-hidden");
+    const el2 = e.target instanceof Element ? e.target : null;
+    if (el2 && el2.closest(hoverables)) el.classList.add("is-hover");
+    if (el2 && el2.closest(".map-frame")) el.classList.add("is-hidden");
+    const labelled = el2 && el2.closest("[data-cursor]");
+    if (labelled) {
+      label.textContent = labelled.getAttribute("data-cursor") || "";
+      el.classList.add("is-labelled");
+    }
   });
   document.addEventListener("pointerout", (e) => {
-    if (e.target.closest(hoverables)) el.classList.remove("is-hover");
-    if (e.target.closest(".map-frame")) el.classList.remove("is-hidden");
+    const el2 = e.target instanceof Element ? e.target : null;
+    if (el2 && el2.closest(hoverables)) el.classList.remove("is-hover");
+    if (el2 && el2.closest(".map-frame")) el.classList.remove("is-hidden");
+    if (el2 && el2.closest("[data-cursor]")) {
+      el.classList.remove("is-labelled");
+      label.textContent = "";
+    }
   });
 }
 
@@ -211,6 +234,48 @@ function initReveals() {
       el.style.setProperty("--reveal-delay", `${Math.min(Math.max(idx, 0), 5) * 0.09}s`);
     }
     io.observe(el);
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Sector hover → ground colour. On the homepage, hovering a sector row washes
+   the WebGL ground to that sector's hue; leaving returns it to the scroll
+   state. Ties the decorative background to the brand, so it feels responsive
+   rather than ambient.
+   -------------------------------------------------------------------------- */
+function initSectorHover(scene) {
+  if (!scene || reduceMotion) return;
+  if (document.body.dataset.sector) return; // homepage only (sub-pages are locked)
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+  $$(".sector[data-scene]").forEach((sec) => {
+    const key = sec.dataset.scene;
+    if (!key) return;
+    sec.addEventListener("pointerenter", () => scene.setHover(key));
+    sec.addEventListener("pointerleave", () => scene.setHover(null));
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Magnetic controls — buttons and arrow links ease toward the cursor while
+   hovered and spring back on leave. Driven by GSAP so it never fights the
+   element's own colour transitions. Desktop pointers only.
+   -------------------------------------------------------------------------- */
+function initMagnetic() {
+  if (reduceMotion || !window.gsap) return;
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+  $$(".btn, .link-arrow").forEach((el) => {
+    const pull = 0.28;
+    el.addEventListener("pointermove", (e) => {
+      const r = el.getBoundingClientRect();
+      const mx = e.clientX - (r.left + r.width / 2);
+      const my = e.clientY - (r.top + r.height / 2);
+      window.gsap.to(el, { x: mx * pull, y: my * pull, duration: 0.4, ease: "power3.out" });
+    });
+    el.addEventListener("pointerleave", () => {
+      window.gsap.to(el, { x: 0, y: 0, duration: 0.6, ease: "elastic.out(1, 0.45)" });
+    });
   });
 }
 
@@ -353,10 +418,12 @@ async function initStage() {
   initHeader();
   initFloatingCta();
   initPageTransitions();
+  initMagnetic();
 
   initCursor();
   const lenis = initSmoothScroll();
   const scene = await initStage();
+  initSectorHover(scene);
 
   /* Overall scroll progress (0..1) for the scene's shape on sector pages.
      Prefer Lenis' own progress (no layout read); otherwise fall back to a

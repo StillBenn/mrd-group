@@ -285,6 +285,11 @@ export function createScene(container) {
      per-chapter warps (which were tuned for the homepage order). */
   let scrollP = 0;
 
+  /* On the homepage, hovering a sector row pulls the whole ground to that
+     sector's colour and formation; releasing returns it to the scroll state.
+     The low-pass below makes the shift a smooth wash, not a switch. */
+  let hoverKey = null;
+
   /* Low-pass state: the uniforms ease toward their targets every frame, so any
      abrupt change — a section boundary, a big warp step — arrives as a smooth
      glide, never a snap. This is the single knob that removes the hard cuts. */
@@ -323,6 +328,11 @@ export function createScene(container) {
       tDepth = 1.02;
       tCol0 = lockColor[0]; tCol1 = lockColor[1]; tCol2 = lockColor[2];
       baseX = 0.12; baseY = 0.14;
+    } else if (hoverKey) {
+      const c = CHAPTERS[hoverKey];
+      tWarp = c.warp; tDepth = c.depth;
+      tCol0 = c.color[0]; tCol1 = c.color[1]; tCol2 = c.color[2];
+      baseX = c.light[0]; baseY = c.light[1];
     } else {
       tWarp = lerp(a.warp, b.warp, k);
       tDepth = lerp(a.depth, b.depth, k);
@@ -390,6 +400,11 @@ export function createScene(container) {
        sector pages. Harmless on the homepage (ignored there). */
     setScroll(p) {
       scrollP = p < 0 ? 0 : p > 1 ? 1 : p;
+    },
+
+    /* Homepage sector-hover preview; pass a chapter name or null to release. */
+    setHover(name) {
+      hoverKey = name && Object.prototype.hasOwnProperty.call(CHAPTERS, name) ? name : null;
     },
 
     update,
