@@ -492,15 +492,20 @@ function initCarousel() {
     let baseOffset = 0;
     let step = 0;
 
+    /* Measure with layout metrics (offsetLeft / offsetWidth), NOT
+       getBoundingClientRect: the active slide is scale(1) and its neighbours
+       scale(0.82), and a bounding rect reports the *scaled* size. Using it made
+       the centring drift by the scale gap for every slide past the first, so
+       the active image never landed in the middle after a move. */
     const measure = () => {
-      const r = slides[0].getBoundingClientRect();
-      const gap = parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap) || 0;
-      step = r.width + gap;
+      step = slides.length > 1
+        ? slides[1].offsetLeft - slides[0].offsetLeft
+        : slides[0].offsetWidth;
     };
 
     const centeredOffset = () => {
-      const r = slides[0].getBoundingClientRect();
-      return viewport.clientWidth / 2 - (active * step + r.width / 2);
+      const s = slides[active];
+      return viewport.clientWidth / 2 - (s.offsetLeft + s.offsetWidth / 2);
     };
 
     const layout = (withTransition) => {
