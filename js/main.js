@@ -238,6 +238,26 @@ function initReveals() {
 }
 
 /* --------------------------------------------------------------------------
+   WhatsApp prefill — every wa.me link gets a message tuned to the page's
+   sector, so a tap opens WhatsApp with the right context already typed.
+   -------------------------------------------------------------------------- */
+function initWhatsappPrefill() {
+  const messages = {
+    market: "Merhaba, Cizre Park hakkında bilgi almak istiyorum.",
+    insaat: "Merhaba, MRD İnşaat projeleri hakkında bilgi almak istiyorum.",
+    enerji: "Merhaba, MRD Enerji hakkında bilgi almak istiyorum.",
+    "": "Merhaba, MRD Group hakkında bilgi almak istiyorum.",
+  };
+  const text = messages[document.body.dataset.sector || ""] || messages[""];
+  const q = "text=" + encodeURIComponent(text);
+  $$('a[href*="wa.me"]').forEach((a) => {
+    const href = a.getAttribute("href");
+    if (!href || /[?&]text=/.test(href)) return;
+    a.setAttribute("href", href + (href.includes("?") ? "&" : "?") + q);
+  });
+}
+
+/* --------------------------------------------------------------------------
    Sector hover → ground colour. On the homepage, hovering a sector row washes
    the WebGL ground to that sector's hue; leaving returns it to the scroll
    state. Ties the decorative background to the brand, so it feels responsive
@@ -419,6 +439,7 @@ async function initStage() {
   initFloatingCta();
   initPageTransitions();
   initMagnetic();
+  initWhatsappPrefill();
 
   initCursor();
   const lenis = initSmoothScroll();
