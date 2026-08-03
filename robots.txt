@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /mrd-group/panel/
 
 Sitemap: https://stillbenn.github.io/mrd-group/sitemap.xml

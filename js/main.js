@@ -424,6 +424,10 @@ function initCarousel() {
   const TOTAL = 12;
 
   roots.forEach((root) => {
+    root.setAttribute("role", "group");
+    root.setAttribute("aria-roledescription", "galeri");
+    root.setAttribute("aria-label", label + " görselleri");
+
     const viewport = document.createElement("div");
     viewport.className = "carousel__viewport";
     const track = document.createElement("div");
