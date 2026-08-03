@@ -215,6 +215,58 @@ function initReveals() {
 }
 
 /* --------------------------------------------------------------------------
+   Page transitions — a paper curtain rises to cover the screen before an
+   internal navigation. Combined with the loader curtain on the incoming page,
+   the separate HTML pages feel like one continuous application.
+   -------------------------------------------------------------------------- */
+function initPageTransitions() {
+  if (reduceMotion) return;
+
+  const wipe = document.createElement("div");
+  wipe.className = "page-wipe";
+  wipe.setAttribute("aria-hidden", "true");
+  const mark = document.createElement("img");
+  mark.className = "page-wipe__logo";
+  mark.src = "./img/mrd-group.png";
+  mark.alt = "";
+  wipe.appendChild(mark);
+  document.body.appendChild(wipe);
+
+  let leaving = false;
+
+  const isInternal = (a) => {
+    const href = a.getAttribute("href");
+    if (!href) return false;
+    if (a.target && a.target !== "_self") return false;
+    if (a.hasAttribute("download")) return false;
+    if (/^(https?:|mailto:|tel:|#)/.test(href)) return false;
+    return true; // ./*.html, ./ , relative paths
+  };
+
+  document.addEventListener("click", (e) => {
+    if (leaving) return;
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest("a");
+    if (!a || !isInternal(a)) return;
+    e.preventDefault();
+    leaving = true;
+    document.body.classList.add("is-leaving");
+    const go = () => (window.location.href = a.href);
+    // navigate once the curtain has covered the screen
+    setTimeout(go, 560);
+  });
+
+  /* A browser back/forward that restores this page from cache would leave the
+     curtain stuck down. Clear it whenever the page is shown again. */
+  window.addEventListener("pageshow", (e) => {
+    if (e.persisted) {
+      leaving = false;
+      document.body.classList.remove("is-leaving");
+    }
+  });
+}
+
+/* --------------------------------------------------------------------------
    Floating WhatsApp — appears once the hero is behind the reader.
    -------------------------------------------------------------------------- */
 function initFloatingCta() {
@@ -300,6 +352,7 @@ async function initStage() {
 
   initHeader();
   initFloatingCta();
+  initPageTransitions();
 
   initCursor();
   const lenis = initSmoothScroll();

@@ -21,13 +21,56 @@
   justify-items: center;
   gap: var(--s-5);
   background: var(--c-paper);
-  transition: opacity var(--d-slow) var(--e-out),
-    visibility var(--d-slow) var(--e-out);
+  will-change: transform;
+  transition: transform var(--d-slow) var(--e-in-out),
+    visibility var(--d-slow);
 }
+/* The loader lifts away like a curtain rather than fading — it reveals the
+   page beneath and shares its motion language with the page-exit wipe below,
+   so entering and leaving a page feel like one continuous system. */
 .loader.is-done {
-  opacity: 0;
+  transform: translateY(-100%);
   visibility: hidden;
   pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   1b. Page-exit wipe — a paper curtain that rises to cover the screen before
+   an internal navigation, so the multi-page site reads as one seamless app.
+   The incoming page's loader (same paper, same logo) then lifts to reveal it.
+   -------------------------------------------------------------------------- */
+.page-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-loader) + 10);
+  display: grid;
+  place-content: center;
+  background: var(--c-paper);
+  transform: translateY(100%);
+  pointer-events: none;
+  will-change: transform;
+}
+.page-wipe__logo {
+  height: 3rem;
+  width: auto;
+  opacity: 0;
+  transform: translateY(8px);
+}
+body.is-leaving .page-wipe {
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: transform 0.62s var(--e-in-out);
+}
+body.is-leaving .page-wipe__logo {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.4s var(--e-out) 0.14s,
+    transform 0.5s var(--e-out) 0.14s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-wipe {
+    display: none;
+  }
 }
 .loader__bar {
   width: min(42vw, 13rem);
