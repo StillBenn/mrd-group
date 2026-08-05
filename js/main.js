@@ -353,9 +353,6 @@ function initBuildingFrame() {
 
   const canvas = $(".frame__canvas", root);
   const counter = $(".frame__counter", root);
-  const hint = $(".frame__hint", root);
-  const exit = $(".frame__exit", root);
-  const wrap = $(".frame__canvas-wrap", root);
 
   const bail = () => root.classList.add("is-static");
 
@@ -393,9 +390,7 @@ function initBuildingFrame() {
       scrub: 0.5,
       onUpdate: (self) => {
         scene.setProgress(self.progress);
-        /* While the reader is inside a flat the counter shows which one, so
-           the scroll must not overwrite it. */
-        if (counter && !scene.isInside()) {
+        if (counter) {
           const built = Math.min(floors, Math.round(self.progress * floors));
           const label = "Kat " + built + " / " + floors;
           if (counter.textContent !== label) counter.textContent = label;
@@ -412,36 +407,9 @@ function initBuildingFrame() {
           ((e.clientX - r.left) / r.width) * 2 - 1,
           ((e.clientY - r.top) / r.height) * 2 - 1
         );
-        if (!scene.isInside()) {
-          const over = scene.floorAt(e.clientX, e.clientY) >= 0;
-          wrap.classList.toggle("is-clickable", over);
-        }
       },
       { passive: true }
     );
-
-    /* Click a storey to step inside it. */
-    canvas.addEventListener("click", async (e) => {
-      if (scene.isInside()) return;
-      const idx = scene.floorAt(e.clientX, e.clientY);
-      if (idx < 0) return;
-      await scene.enter(idx);
-      if (exit) exit.hidden = false;
-      if (counter) counter.textContent = (idx + 1) + ". kat — daire içi";
-      if (hint) hint.textContent = "Fareyi gezdirerek bakının";
-      wrap.classList.remove("is-clickable");
-    });
-
-    const leave = () => {
-      if (!scene.isInside()) return;
-      scene.exit();
-      if (exit) exit.hidden = true;
-      if (hint) hint.textContent = "Kaydırarak yükseltin · kata tıklayıp içeri girin";
-    };
-    if (exit) exit.addEventListener("click", leave);
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") leave();
-    });
 
     window.ScrollTrigger.refresh();
   };

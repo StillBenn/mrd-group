@@ -26,30 +26,29 @@ and stops the renderer whenever it leaves. Every other page pays nothing.
 
 ### The architectural viewer
 
-Two models, both generated rather than hand-modelled, by one Blender script:
+`img/building.glb` (1.4 MB) is generated rather than hand-modelled: a Blender
+script builds a six-storey block — concrete frame, glazed facades, balconies
+with railings, parapet, entrance canopy — and exports each storey as its own
+named object (`Floor_0` … `Floor_5`). Those names are what let
+`js/building.js` raise the storeys one at a time as the reader scrolls.
 
-| File | Size | What it is |
-| --- | --- | --- |
-| `img/building.glb` | 1.4 MB | six-storey block: concrete frame, glazed facades, balconies, railings, parapet |
-| `img/flat.glb` | 424 KB | one apartment interior — living/kitchen, dining, bedroom, glazed wall |
-| `img/hdr/*.hdr` | 1.6 MB each | Poly Haven CC0 environment maps |
-
-Each storey exports as its own named object (`Floor_0` … `Floor_5`). Those
-names are what let `js/building.js` raise the storeys one at a time as the
-reader scrolls, and hit-test them so a click steps inside the apartment.
-
-Rebuild both models with:
+`img/hdr/kloofendal_48d_partly_cloudy.hdr` (1.6 MB) is a Poly Haven CC0
+environment map. Rebuild the model with:
 
 ```bash
 blender --background --python building.py -- img
 ```
 
-**Why it is lit with an HDR.** An earlier version shipped untextured boxes and
+**Why it is lit with an HDR.** A first version shipped untextured boxes and
 read as grey cardboard. Perceived quality in architectural 3D comes from
 material and light, so the renderer uses an HDR environment (reflections and
 soft light), ACES filmic tone mapping, and the PBR materials authored in
-Blender — never a flat colour override. The interior is a closed box that an
-environment map cannot reach, so it carries its own daylight, bounce and lamp.
+Blender — never a flat colour override.
+
+An interior walkthrough was built and removed: box-based furniture cannot look
+convincing at any lighting quality, and a stock interior would not have been
+this client's. If one is wanted later, the honest routes are a licensed
+interior scene or the client's own architectural model.
 
 There is no 3D library. The background is a single full-screen fragment shader
 written against raw WebGL in `js/scene.js` — one draw call per frame, no

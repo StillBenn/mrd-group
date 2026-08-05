@@ -1,12 +1,8 @@
 """
 MRD Group — procedural architecture for the construction page.
 
-Produces two models:
-
-  building.glb   a six-storey residential block: concrete frame, glazed
-                 facades, balconies with metal railings, parapet, entrance
-  flat.glb       one apartment interior you can look around: living/kitchen,
-                 dining, bedroom, and a glazed wall looking out
+Produces `building.glb`: a six-storey residential block — concrete frame,
+glazed facades, balconies with metal railings, parapet and entrance canopy.
 
 Why it is modelled this way: a first attempt shipped bare slabs on columns and
 read as grey cardboard. Perceived quality in architectural 3D comes from
@@ -33,7 +29,6 @@ PARAPET = 1.0
 BALC = 1.6               # balcony depth
 RAIL_H = 1.05
 
-FLAT_W, FLAT_D, FLAT_H = 9.5, 7.5, 2.75   # apartment interior
 
 
 def reset():
@@ -194,105 +189,7 @@ def build_building(out):
     print("BUILDING_FACES:", tris)
 
 
-# ===========================================================================
-#  APARTMENT INTERIOR
-# ===========================================================================
-def build_flat(out):
-    reset()
-
-    m_floor = mat("Oak", (0.470, 0.352, 0.226, 1.0), 0.55)
-    m_wall = mat("Wall", (0.900, 0.892, 0.878, 1.0), 0.92)
-    m_ceil = mat("Ceiling", (0.940, 0.936, 0.928, 1.0), 0.95)
-    m_glass = mat("Window", (0.66, 0.74, 0.77, 1.0), 0.05, 0.0, 0.94, 1.5)
-    m_frame = mat("Frame", (0.26, 0.26, 0.27, 1.0), 0.40, 0.85)
-    m_sofa = mat("Sofa", (0.372, 0.380, 0.372, 1.0), 0.85)
-    m_wood = mat("Walnut", (0.300, 0.204, 0.130, 1.0), 0.48)
-    m_stone = mat("Counter", (0.760, 0.752, 0.738, 1.0), 0.30)
-    m_metal = mat("Steel", (0.66, 0.66, 0.67, 1.0), 0.28, 1.0)
-    m_textile = mat("Linen", (0.836, 0.820, 0.792, 1.0), 0.92)
-    m_plant = mat("Plant", (0.196, 0.328, 0.176, 1.0), 0.72)
-
-    hw, hd = FLAT_W / 2, FLAT_D / 2
-
-    # shell
-    box("floor", (0, 0, -0.06), (FLAT_W, FLAT_D, 0.12), m_floor, 0.01)
-    box("ceil", (0, 0, FLAT_H + 0.06), (FLAT_W, FLAT_D, 0.12), m_ceil, 0.01)
-    box("wall_back", (0, hd, FLAT_H / 2), (FLAT_W, 0.14, FLAT_H), m_wall, 0.01)
-    box("wall_left", (-hw, 0, FLAT_H / 2), (0.14, FLAT_D, FLAT_H), m_wall, 0.01)
-    box("wall_right", (hw, 0, FLAT_H / 2), (0.14, FLAT_D, FLAT_H), m_wall, 0.01)
-
-    # glazed front wall — the view out is what makes an interior feel real
-    box("glass_front", (0, -hd, FLAT_H / 2), (FLAT_W - 0.3, 0.06, FLAT_H - 0.2), m_glass, 0.0)
-    for gx in (-FLAT_W / 3, 0.0, FLAT_W / 3):
-        box("mullion", (gx, -hd, FLAT_H / 2), (0.09, 0.10, FLAT_H - 0.2), m_frame, 0.01)
-    box("head", (0, -hd, FLAT_H - 0.06), (FLAT_W, 0.16, 0.14), m_wall, 0.01)
-    box("sillf", (0, -hd, 0.07), (FLAT_W, 0.18, 0.14), m_wall, 0.01)
-
-    # partition to the bedroom
-    box("part", (1.4, 1.0, FLAT_H / 2), (0.13, FLAT_D - 2.0, FLAT_H), m_wall, 0.01)
-
-    # ---- living area -------------------------------------------------------
-    sx, sy = -2.1, -1.5
-    box("sofa_base", (sx, sy, 0.22), (2.5, 0.95, 0.44), m_sofa, 0.05)
-    box("sofa_back", (sx, sy + 0.52, 0.62), (2.5, 0.22, 0.84), m_sofa, 0.05)
-    for a in (-1, 1):
-        box("sofa_arm", (sx + a * 1.28, sy, 0.52), (0.24, 0.95, 0.62), m_sofa, 0.05)
-    for c in (-0.62, 0.62):
-        box("cush", (sx + c, sy - 0.04, 0.50), (1.10, 0.80, 0.14), m_textile, 0.04)
-
-    box("rug", (sx, sy - 0.9, 0.01), (3.4, 2.2, 0.02), m_textile, 0.0)
-    box("table", (sx, sy - 1.0, 0.20), (1.25, 0.65, 0.08), m_wood, 0.02)
-    for lx in (-0.5, 0.5):
-        for ly in (-0.22, 0.22):
-            box("tleg", (sx + lx, sy - 1.0 + ly, 0.09), (0.06, 0.06, 0.18), m_metal, 0.01)
-
-    box("tvunit", (sx, hd - 0.45, 0.24), (2.6, 0.42, 0.48), m_wood, 0.02)
-    box("tv", (sx, hd - 0.30, 1.25), (1.7, 0.06, 0.98), m_frame, 0.01)
-
-    # ---- dining + kitchen --------------------------------------------------
-    dx, dy = 2.6, -1.2
-    box("dtable", (dx, dy, 0.73), (1.9, 0.95, 0.07), m_wood, 0.02)
-    for lx in (-0.82, 0.82):
-        for ly in (-0.38, 0.38):
-            box("dleg", (dx + lx, dy + ly, 0.36), (0.08, 0.08, 0.72), m_wood, 0.01)
-    for cx in (-0.62, 0.62):
-        for cy in (-0.78, 0.78):
-            box("seat", (dx + cx, dy + cy, 0.45), (0.44, 0.44, 0.06), m_textile, 0.03)
-            box("cback", (dx + cx, dy + cy + (0.20 if cy > 0 else -0.20), 0.70),
-                (0.44, 0.06, 0.46), m_wood, 0.03)
-            for ox in (-0.17, 0.17):
-                for oy in (-0.17, 0.17):
-                    box("cleg", (dx + cx + ox, dy + cy + oy, 0.22), (0.05, 0.05, 0.44), m_metal, 0.0)
-
-    kx = 3.2
-    box("kbase", (kx, 1.6, 0.44), (2.2, 0.68, 0.88), m_wood, 0.02)
-    box("ktop", (kx, 1.6, 0.90), (2.3, 0.74, 0.05), m_stone, 0.02)
-    box("kupper", (kx, 2.05, 2.05), (2.2, 0.38, 0.72), m_wall, 0.02)
-    box("sink", (kx - 0.55, 1.55, 0.90), (0.52, 0.42, 0.04), m_metal, 0.01)
-    box("tap", (kx - 0.55, 1.80, 1.06), (0.05, 0.05, 0.30), m_metal, 0.01)
-
-    box("pot", (-hw + 0.7, hd - 0.9, 0.22), (0.42, 0.42, 0.44), m_stone, 0.04)
-    box("leaf", (-hw + 0.7, hd - 0.9, 0.95), (0.62, 0.62, 1.05), m_plant, 0.12)
-    box("lamp_base", (hw - 0.8, -hd + 1.2, 0.03), (0.34, 0.34, 0.06), m_metal, 0.02)
-    box("lamp_rod", (hw - 0.8, -hd + 1.2, 0.85), (0.045, 0.045, 1.7), m_metal, 0.0)
-    box("lamp_shade", (hw - 0.8, -hd + 1.2, 1.80), (0.42, 0.42, 0.26), m_textile, 0.06)
-
-    # ---- bedroom -----------------------------------------------------------
-    bx, by = 3.0, 2.4
-    box("bed", (bx, by, 0.26), (1.75, 2.05, 0.52), m_wood, 0.03)
-    box("mattress", (bx, by, 0.60), (1.65, 1.95, 0.24), m_textile, 0.05)
-    box("pillow", (bx, by + 0.78, 0.78), (1.20, 0.36, 0.14), m_textile, 0.06)
-    box("throw", (bx, by - 0.62, 0.74), (1.65, 0.70, 0.05), m_sofa, 0.03)
-    for nx in (-1.08, 1.08):
-        box("night", (bx + nx, by + 0.85, 0.24), (0.44, 0.40, 0.48), m_wood, 0.02)
-
-    export(out)
-    tris = sum(len(o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')
-    print("FLAT_FACES:", tris)
-
-
 args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 out_dir = args[0] if args else "."
 build_building(out_dir + "/building.glb")
-build_flat(out_dir + "/flat.glb")
 print("DONE")
