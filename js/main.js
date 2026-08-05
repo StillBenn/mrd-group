@@ -515,9 +515,6 @@ function initCarousel() {
   if (!roots.length) return;
   const sector = document.body.dataset.sector || "";
   const label = sector === "market" ? "Cizre Park" : sector === "insaat" ? "Proje" : "Görsel";
-  const svg =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="11" r="2"/><path d="M3 17l5-4 4 3 3-2 6 5"/></svg>';
-
   let custom = [];
   try {
     custom = JSON.parse(localStorage.getItem("mrd.gallery." + sector) || "[]");
@@ -530,11 +527,12 @@ function initCarousel() {
 
   /* Market ships the client's own REAL Cizre Park photos (6); construction and
      energy still use the 12 sample placeholders until their real photos arrive. */
-  const COUNTS = { market: 6 };
-  const TOTAL = COUNTS[sector] || 12;
+  const SHIPPED = { market: 6 };
+  const shippedCount = SHIPPED[sector] || 12;
 
-  /* Captions for the real Cizre Park photos — shown in the full-screen viewer.
-     Placeholder sectors stay uncaptioned. */
+  /* Captions belong to the SHIPPED photos, so they must travel with their own
+     file — pairing them by slide index would mislabel every photo as soon as
+     an admin upload shifts the order. */
   const CAPTIONS = {
     market: [
       "Açık hava çarşısı",
@@ -545,15 +543,19 @@ function initCarousel() {
       "İç mekân — yeme, içme ve sosyal alan",
     ],
   };
-  const captionAt = (i) => (CAPTIONS[sector] && CAPTIONS[sector][i]) || "";
 
-  /* Default sample photos shipped per sector (self-hosted). Admin uploads from
-     the panel take the leading slots and push these back. */
-  const defaults = [];
-  for (let i = 1; i <= TOTAL; i++) {
-    defaults.push("./img/gallery/" + sector + "-" + String(i).padStart(2, "0") + ".jpg");
+  /* Admin uploads lead; the shipped photos follow. Every upload is kept — an
+     editor who adds ten photos must see all ten. */
+  const shipped = [];
+  for (let i = 1; i <= shippedCount; i++) {
+    shipped.push({
+      src: "./img/gallery/" + sector + "-" + String(i).padStart(2, "0") + ".jpg",
+      caption: (CAPTIONS[sector] && CAPTIONS[sector][i - 1]) || "",
+    });
   }
-  const sources = custom.concat(defaults).slice(0, TOTAL);
+  const sources = custom
+    .map((src) => ({ src: src, caption: "" }))
+    .concat(shipped);
 
   roots.forEach((root) => {
     root.setAttribute("role", "group");
@@ -566,31 +568,24 @@ function initCarousel() {
     track.className = "carousel__track";
     viewport.appendChild(track);
 
-    for (let i = 0; i < TOTAL; i++) {
+    sources.forEach((item, i) => {
       const slide = document.createElement("button");
       slide.type = "button";
       slide.className = "carousel__slide";
       slide.setAttribute("aria-label", label + " görseli " + (i + 1));
-      if (sources[i]) {
-        slide.setAttribute("data-caption", captionAt(i));
-        const img = document.createElement("img");
-        img.alt = label + " görseli " + (i + 1);
-        img.loading = "lazy";
-        img.decoding = "async";
-        /* Resolve from soft over-scan once decoded, so real photos feel placed
-           rather than popped (CSS owns the transition). */
-        img.addEventListener("load", () => img.classList.add("is-loaded"), { once: true });
-        img.src = sources[i];
-        if (img.complete && img.naturalWidth) img.classList.add("is-loaded");
-        slide.appendChild(img);
-      } else {
-        slide.setAttribute("data-caption", label + " görseli " + (i + 1));
-        slide.innerHTML =
-          '<span class="gallery__ph">' + svg + "<span>" + label + " " +
-          String(i + 1).padStart(2, "0") + "</span></span>";
-      }
+      slide.setAttribute("data-caption", item.caption);
+      const img = document.createElement("img");
+      img.alt = item.caption || label + " görseli " + (i + 1);
+      img.loading = "lazy";
+      img.decoding = "async";
+      /* Resolve from soft over-scan once decoded, so real photos feel placed
+         rather than popped (CSS owns the transition). */
+      img.addEventListener("load", () => img.classList.add("is-loaded"), { once: true });
+      img.src = item.src;
+      if (img.complete && img.naturalWidth) img.classList.add("is-loaded");
+      slide.appendChild(img);
       track.appendChild(slide);
-    }
+    });
 
     const prev = document.createElement("button");
     prev.type = "button";
@@ -617,10 +612,15 @@ function initCarousel() {
     let step = 0;
     const n = slides.length;
 
-    /* Distance between neighbour centres: slide width plus a small gap. */
+    /* Distance between neighbour centres. On a wide screen the neighbours sit
+       beside the centre slide; on a narrow one that would push them off-screen
+       entirely, so they tuck partly BEHIND it (they already carry a lower
+       z-index) and keep peeking in — the 3-up read survives on phones. */
     const measure = () => {
       const w = slides[0] ? slides[0].offsetWidth : 0;
-      step = w + Math.min(w * 0.06 + 20, 44);
+      step = viewport.clientWidth < 640
+        ? w * 0.62
+        : w + Math.min(w * 0.06 + 20, 44);
     };
 
     /* Shortest signed distance from the active slide to slide i, wrapping at
