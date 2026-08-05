@@ -638,12 +638,17 @@ function initCarousel() {
       slides.forEach((s, i) => {
         const d = dist(i);
         const abs = Math.abs(d);
+        const near = abs <= 1; // centre + the two neighbours: the only visible ones
         const scale = d === 0 ? 1 : 0.82;
         s.style.transform =
           "translate(calc(-50% + " + d * step + "px), -50%) scale(" + scale + ")";
-        s.style.opacity = abs <= 1 ? (d === 0 ? "1" : "0.55") : "0";
+        s.style.opacity = near ? (d === 0 ? "1" : "0.55") : "0";
         s.style.zIndex = String(20 - abs);
-        s.style.pointerEvents = abs <= 1 ? "auto" : "none";
+        s.style.pointerEvents = near ? "auto" : "none";
+        /* Off-stage slides drop their blur and their GPU layer. Leaving a dozen
+           blurred, promoted layers alive costs real frames while scrolling. */
+        s.style.filter = near ? "" : "none";
+        s.style.willChange = near ? "transform, opacity" : "auto";
         s.classList.toggle("is-active", d === 0);
       });
       if (!animate) {

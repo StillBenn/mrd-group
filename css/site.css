@@ -1332,7 +1332,8 @@ body.has-cursor .map-frame * {
   color: var(--c-ink-faint);
   filter: blur(5px);
   transform: translate(-50%, -50%);
-  will-change: transform, opacity;
+  /* will-change is set per-slide by initCarousel(): only the three on-stage
+     slides get a GPU layer, the rest release theirs. */
   transition: transform 0.7s var(--e-out), opacity 0.7s var(--e-out),
     filter 0.7s var(--e-out), box-shadow 0.7s var(--e-out);
 }
