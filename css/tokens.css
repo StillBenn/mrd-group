@@ -18,7 +18,9 @@
   /* --- Ink ------------------------------------------------------------- */
   --c-ink: #12120f;
   --c-ink-dim: #55544c;
-  --c-ink-faint: #8b8981;
+  /* Deepened from #8b8981, which only reached 2.84:1 on paper — below WCAG AA.
+     This tone clears 4.5:1 on both the paper and the alternating band. */
+  --c-ink-faint: #615f58;
   --c-line: rgba(18, 18, 15, 0.14);
   --c-line-soft: rgba(18, 18, 15, 0.08);
 
