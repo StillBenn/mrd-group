@@ -1647,6 +1647,11 @@ body.menu-open .chapter-rail {
   margin-top: var(--s-5);
   justify-self: start;
 }
+/* .btn sets display:inline-flex, which overrides the [hidden] attribute —
+   without this the exit button shows before anyone has stepped inside. */
+.frame__exit[hidden] {
+  display: none;
+}
 /* The canvas is interactive once a storey can be entered. */
 .frame__canvas-wrap.is-clickable {
   cursor: pointer;

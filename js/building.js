@@ -90,6 +90,22 @@ export async function createBuilding(canvas, opts = {}) {
   const building = gltf.scene;
   const floors = [];
 
+  building.children.slice().forEach((child) => {
+    if (!child.name.startsWith(FLOOR_PREFIX)) return;
+    const idx = parseInt(child.name.slice(FLOOR_PREFIX.length), 10);
+    /* Every storey needs its OWN material instances. Blender exports one
+       shared concrete/glass material across all six, so fading storey 5 was
+       fading the entire building — which is why nothing appeared until the
+       scroll was nearly finished. */
+    child.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      o.material = Array.isArray(o.material)
+        ? o.material.map((m) => m.clone())
+        : o.material.clone();
+    });
+    floors.push({ idx, obj: child, baseY: child.position.y });
+  });
+
   building.traverse((o) => {
     if (!o.isMesh) return;
     o.castShadow = true;
@@ -100,13 +116,6 @@ export async function createBuilding(canvas, opts = {}) {
       /* Blender exports glass as transmissive; keep it, just make sure it is
          not written into the depth buffer as an opaque wall. */
       if (m.transmission > 0 || m.opacity < 1) m.depthWrite = false;
-    }
-  });
-
-  building.children.slice().forEach((child) => {
-    if (child.name.startsWith(FLOOR_PREFIX)) {
-      const idx = parseInt(child.name.slice(FLOOR_PREFIX.length), 10);
-      floors.push({ idx, obj: child, baseY: child.position.y });
     }
   });
   floors.sort((a, b) => a.idx - b.idx);
@@ -130,18 +139,23 @@ export async function createBuilding(canvas, opts = {}) {
         });
 
         /* A closed interior receives nothing from the environment, so it is
-           lit deliberately: daylight through the glazed wall, a soft ceiling
-           bounce, and a warm lamp in the corner. */
-        const day = new THREE.RectAreaLight(0xffffff, 7.5, 9.2, 2.6);
-        day.position.set(0, 1.5, -4.0);
-        day.lookAt(0, 1.4, 2);
+           lit deliberately. RectAreaLight is avoided on purpose: it needs
+           RectAreaLightUniformsLib initialised or it silently contributes
+           nothing — which is exactly how this room ended up pitch dark. */
+        const day = new THREE.DirectionalLight(0xfff4e6, 3.2);
+        day.position.set(1.5, 3.2, 9.0);   // sun coming through the glazed wall
+        day.target.position.set(0, 1.0, -2.0);
         root.add(day);
+        root.add(day.target);
 
-        const bounce = new THREE.HemisphereLight(0xffffff, 0xc8bda8, 1.35);
+        const bounce = new THREE.HemisphereLight(0xffffff, 0xbfae95, 2.1);
+        bounce.position.set(0, 2.6, 0);
         root.add(bounce);
 
-        const lamp = new THREE.PointLight(0xffd9a8, 12, 9, 2);
-        lamp.position.set(3.9, 1.9, -2.6);
+        root.add(new THREE.AmbientLight(0xffffff, 0.55));
+
+        const lamp = new THREE.PointLight(0xffd2a0, 9, 8, 2);
+        lamp.position.set(3.6, 1.85, 2.4);
         root.add(lamp);
 
         root.visible = false;
@@ -185,7 +199,7 @@ export async function createBuilding(canvas, opts = {}) {
       let t = (progress - start) / (end - start);
       t = t < 0 ? 0 : t > 1 ? 1 : t;
       const eased = 1 - Math.pow(1 - t, 3);
-      f.obj.position.y = f.baseY + (1 - eased) * 9.0;
+      f.obj.position.y = f.baseY + (1 - eased) * 5.0;
       f.obj.visible = eased > 0.004;
       f.obj.traverse((o) => {
         if (!o.isMesh || !o.material) return;
@@ -200,23 +214,35 @@ export async function createBuilding(canvas, opts = {}) {
     renderer.render(scene, camera);
   }
 
+  const lookAt = new THREE.Vector3();
+
   function frame() {
     raf = 0;
     if (!running) return;
-    smoothX += (pointerX - smoothX) * 0.05;
-    smoothY += (pointerY - smoothY) * 0.05;
+    smoothX += (pointerX - smoothX) * 0.06;
+    smoothY += (pointerY - smoothY) * 0.06;
 
-    /* The pointer never takes the camera; it orbits it a few degrees. */
-    const orbit = mode === "exterior" ? 0.16 : 0.5;
-    const lift = mode === "exterior" ? 0.06 : 0.12;
-    const a = smoothX * orbit;
-    const px = desiredPos.x * Math.cos(a) - desiredPos.z * Math.sin(a);
-    const pz = desiredPos.x * Math.sin(a) + desiredPos.z * Math.cos(a);
-
-    camPos.lerp(new THREE.Vector3(px, desiredPos.y - smoothY * lift * 8, pz), 0.06);
-    target.lerp(desiredTarget, 0.06);
-    camera.position.copy(camPos);
-    camera.lookAt(target);
+    if (mode === "interior") {
+      /* Standing in a room, you do not orbit it — you turn your head. The
+         camera holds its position at eye height and the gaze sweeps. */
+      camPos.lerp(desiredPos, 0.10);
+      camera.position.copy(camPos);
+      lookAt.set(
+        desiredTarget.x + smoothX * 7.0,
+        desiredTarget.y - smoothY * 2.4,
+        desiredTarget.z
+      );
+      camera.lookAt(lookAt);
+    } else {
+      /* Outside, the pointer orbits the model a few degrees. */
+      const a = smoothX * 0.18;
+      const px = desiredPos.x * Math.cos(a) - desiredPos.z * Math.sin(a);
+      const pz = desiredPos.x * Math.sin(a) + desiredPos.z * Math.cos(a);
+      camPos.lerp(new THREE.Vector3(px, desiredPos.y - smoothY * 3.0, pz), 0.06);
+      target.lerp(desiredTarget, 0.08);
+      camera.position.copy(camPos);
+      camera.lookAt(target);
+    }
 
     draw();
     raf = requestAnimationFrame(frame);
@@ -275,9 +301,13 @@ export async function createBuilding(canvas, opts = {}) {
       mode = "interior";
       building.visible = false;
       root.visible = true;
-      scene.environment = envOutdoor;
-      desiredPos = new THREE.Vector3(-0.4, 1.62, 3.1);
-      desiredTarget = new THREE.Vector3(0.1, 1.45, -3.6);
+      /* Stand in the back corner and look across the room towards the glazed
+         wall, so the sofa, table and kitchen are all in frame. A wider lens
+         is what makes an interior feel like a room rather than a cupboard. */
+      camera.fov = 58;
+      camera.updateProjectionMatrix();
+      desiredPos = new THREE.Vector3(-3.1, 1.60, -2.3);
+      desiredTarget = new THREE.Vector3(1.4, 1.20, 3.2);
       camPos.copy(desiredPos);
       target.copy(desiredTarget);
       start();
@@ -289,8 +319,12 @@ export async function createBuilding(canvas, opts = {}) {
       mode = "exterior";
       if (flat) flat.visible = false;
       building.visible = true;
+      camera.fov = 36;
+      camera.updateProjectionMatrix();
       desiredPos = outPos.clone();
       desiredTarget = OUT_TARGET.clone();
+      camPos.copy(outPos);
+      target.copy(OUT_TARGET);
       draw();
     },
 

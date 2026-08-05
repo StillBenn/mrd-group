@@ -186,7 +186,7 @@ def build_building(out):
     bpy.ops.object.join()
     bpy.context.active_object.name = "Floor_%d" % (FLOORS - 1)
 
-    box("Ground", (0, 0, -0.16), (W * 2.6, D * 2.9, 0.32), m_stone, 0.03)
+    box("Ground", (0, 0, -0.16), (W * 1.55, D * 1.75, 0.32), m_stone, 0.03)
 
     export(out)
     tris = sum(len(o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')
