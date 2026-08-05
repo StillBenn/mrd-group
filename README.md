@@ -1,7 +1,7 @@
 # MRD Group — corporate website
 
-Static marketing site for MRD Group, a Gaziantep-based group operating in three
-sectors: wholesale/market, construction, and energy.
+Static marketing site for MRD Group, a group operating in three sectors:
+retail/market, construction, and energy.
 
 **Status:** demo build. Company details, photography and logo are placeholders
 pending client input — see [Placeholder content](#placeholder-content).
@@ -80,8 +80,12 @@ fonts/              Self-hosted woff2 files
 `panel/index.html` is a standalone tool reachable at `…/mrd-group/panel/`. It
 lets an editor add gallery images per sector (market / inşaat / enerji). In this
 demo the images are downscaled and stored in the browser's `localStorage`
-(`mrd.gallery.<sector>`); the sector pages read that key on load and inject the
-images at the front of their gallery (`initGalleryCustom` in `js/main.js`).
+(`mrd.gallery.<sector>`); `initCarousel()` in `js/main.js` reads that key on load
+and puts the uploads at the front of the gallery.
+
+Uploads are **added**, never substituted: an editor who adds ten photos sees all
+ten, followed by the shipped ones. Captions travel with the file they describe,
+so an upload cannot shift them onto the wrong photo.
 
 Because it is one directory below the site root, `panel/index.html` uses
 repo-root asset paths and inlines its own styles — the only file besides
@@ -136,25 +140,32 @@ Unsplash License (free commercial use, no attribution required) — placeholders
 until the company's own construction and energy photos arrive (via the `/panel`
 tool or by dropping files into `img/gallery/` with the same names).
 
-## Placeholder content
+## Content status
 
-Everything below is provisional and must be replaced before the site is treated
-as final:
+**No invented facts.** Every figure, date and place on the site is either taken
+from the company's own published material or deliberately left out. An earlier
+draft carried a demo timeline and demo statistics; both were removed once real
+data was available.
 
-- **Contact details** — phone, WhatsApp and e-mail in `js/config.js`. The same
-  values also appear as static fallback text inside the HTML so they stay
-  visible and crawlable if JavaScript fails; update both.
-- **Company identity** — full registered trade name, founding year, street
-  address. Structured data in `index.html` and `iletisim.html` carries the same
-  values.
-- **Logo** — the current mark is typographic: the name set in Newsreader beside
-  a bronze rule. See the page header, `img/favicon.svg` and `img/og-image.png`.
+Confirmed and live:
+
+- **Contact** — phone `444 89 73`, hours `10.00 – 22.00`, e-mail
+  `info@mrdgroup.com.tr`, all in `js/config.js` and mirrored as static HTML
+  fallback text. Update both.
+- **Flagship project** — Cizre Park Alışveriş ve Yaşam Merkezi: opened 2020,
+  ~16.500 m², 26 stores, 128 residences, 5 cinema screens, 2.000 m² play area.
+  These are the only figures the homepage states.
+
+Still provisional:
+
+- **WhatsApp number** — the one placeholder left in `js/config.js`.
+- **Company identity** — full registered trade name and street address. No city
+  is claimed anywhere; `SITE.city` is intentionally blank.
 - **Sector artwork** — `img/sectors/*.svg` are technical-drawing placeholders,
   not photography.
-- **Map** — `iletisim.html` centres on Gaziantep city centre; replace with the
-  exact location once the address is known.
-- **Figures** — the homepage deliberately states only verifiable facts (three
-  sectors, one group, Gaziantep). No invented statistics.
+- **Construction / energy photography** — see [Gallery photos](#gallery-photos).
+- **Map** — the embed points at Cizre with an approximate marker, and is
+  labelled as approximate; replace with exact coordinates when supplied.
 
 ## Accessibility and motion
 
