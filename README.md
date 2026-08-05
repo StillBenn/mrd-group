@@ -24,17 +24,32 @@ three.js is **not** loaded site-wide. `initBuildingFrame()` imports it, and the
 model, only when the construction page's frame section approaches the viewport,
 and stops the renderer whenever it leaves. Every other page pays nothing.
 
-### The building maquette
+### The architectural viewer
 
-`img/building.glb` (52 KB, 312 faces) is generated, not hand-modelled: a
-Blender Python script builds the slabs, columns and service core, then exports
-each storey as its own named object (`Floor_0` … `Floor_5`). Those names are
-what let `js/building.js` raise the storeys one at a time as the reader
-scrolls. To change the building, edit the script and re-run:
+Two models, both generated rather than hand-modelled, by one Blender script:
+
+| File | Size | What it is |
+| --- | --- | --- |
+| `img/building.glb` | 1.4 MB | six-storey block: concrete frame, glazed facades, balconies, railings, parapet |
+| `img/flat.glb` | 424 KB | one apartment interior — living/kitchen, dining, bedroom, glazed wall |
+| `img/hdr/*.hdr` | 1.6 MB each | Poly Haven CC0 environment maps |
+
+Each storey exports as its own named object (`Floor_0` … `Floor_5`). Those
+names are what let `js/building.js` raise the storeys one at a time as the
+reader scrolls, and hit-test them so a click steps inside the apartment.
+
+Rebuild both models with:
 
 ```bash
-blender --background --python building.py
+blender --background --python building.py -- img
 ```
+
+**Why it is lit with an HDR.** An earlier version shipped untextured boxes and
+read as grey cardboard. Perceived quality in architectural 3D comes from
+material and light, so the renderer uses an HDR environment (reflections and
+soft light), ACES filmic tone mapping, and the PBR materials authored in
+Blender — never a flat colour override. The interior is a closed box that an
+environment map cannot reach, so it carries its own daylight, bounce and lamp.
 
 There is no 3D library. The background is a single full-screen fragment shader
 written against raw WebGL in `js/scene.js` — one draw call per frame, no

@@ -1643,6 +1643,17 @@ body.menu-open .chapter-rail {
 .frame__hint {
   color: var(--c-ink-faint);
 }
+.frame__exit {
+  margin-top: var(--s-5);
+  justify-self: start;
+}
+/* The canvas is interactive once a storey can be entered. */
+.frame__canvas-wrap.is-clickable {
+  cursor: pointer;
+}
+body.has-cursor .frame__canvas-wrap.is-clickable {
+  cursor: none;
+}
 
 /* No WebGL, no JS, or reduced motion: collapse the runway and drop the stage. */
 .frame.is-static {
