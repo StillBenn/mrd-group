@@ -190,30 +190,45 @@
        Replaced an invented five-milestone timeline with the group's one real,
        verifiable landmark project. Every figure here comes from the company's
        own published material. -->
-  <section class="section" id="amiral-proje">
-    <div class="wrap">
-      <div class="section-head">
-        <h2 class="t-h2" data-reveal>Amiral projemiz</h2>
-        <p class="t-label" data-reveal>2020 · Karma kullanım</p>
+  <!-- A pinned, scroll-driven scene: the project's real photographs advance
+       through one day — noon, dusk, night — while the copy steps with them.
+       The stage stays on paper; the photograph is a print laid on it, not a
+       full-bleed takeover, so the identity holds. -->
+  <section class="cinema" id="amiral-proje" aria-labelledby="cinema-title">
+    <div class="cinema__stage">
+      <div class="cinema__media">
+        <img class="cinema__frame is-on" src="./img/gallery/market-02.jpg" alt="Cizre Park Alışveriş ve Yaşam Merkezi'nin gündüz dış cephesi" width="1600" height="1000" decoding="async">
+        <img class="cinema__frame" src="./img/gallery/market-03.jpg" alt="Cizre Park gün batımında" width="1600" height="1000" loading="lazy" decoding="async">
+        <img class="cinema__frame" src="./img/gallery/market-04.jpg" alt="Cizre Park'ın gece promenadı" width="1600" height="1000" loading="lazy" decoding="async">
       </div>
 
-      <div class="split">
-        <a class="reveal-media flagship__media" href="./market.html" aria-label="Cizre Park'ı inceleyin">
-          <img src="./img/gallery/market-02.jpg" alt="Cizre Park Alışveriş ve Yaşam Merkezi dış cephesi" width="1600" height="1000" loading="lazy" decoding="async">
-        </a>
-        <div class="stack-lg" data-reveal>
-          <h3 class="t-h3">Cizre Park Alışveriş ve Yaşam Merkezi</h3>
-          <p>
-            <strong>2020 yılında</strong> hizmete açılan Cizre Park, bölgenin
-            ilk ve tek alışveriş merkezi. Alışveriş, eğlence ve konut aynı
-            projede bir araya getirildi — planlamadan teslimata kadar tüm süreç
-            grup bünyesinde yürütüldü.
+      <div class="cinema__copy">
+        <div class="cinema__head">
+          <p class="cinema__eyebrow t-label t-label--accent">Amiral projemiz</p>
+          <h2 class="cinema__title" id="cinema-title">Cizre Park</h2>
+        </div>
+
+        <div class="cinema__steps">
+          <p class="cinema__step is-on">
+            <span class="cinema__figure">2020</span>
+            Bölgenin ilk ve tek alışveriş merkezi olarak hizmete açıldı.
           </p>
-          <p>
-            Gün ışığı alan açık hava konsepti, 26 mağazalık alışveriş alanı,
-            5 salonlu sineması ve 128 konutluk yaşam alanıyla bölgenin
-            çehresini değiştirdi.
+          <p class="cinema__step">
+            <span class="cinema__figure">26</span>
+            mağazalık alışveriş alanı, gün ışığı alan açık hava konseptinde.
           </p>
+          <p class="cinema__step">
+            <span class="cinema__figure">128</span>
+            konutluk yaşam alanı; alışveriş, eğlence ve konut aynı çatı altında.
+          </p>
+        </div>
+
+        <div class="cinema__foot">
+          <div class="cinema__dots" aria-hidden="true">
+            <span class="cinema__dot is-on"></span>
+            <span class="cinema__dot"></span>
+            <span class="cinema__dot"></span>
+          </div>
           <a class="link-arrow" href="./market.html">
             Projeyi inceleyin
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">

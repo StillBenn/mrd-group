@@ -1582,3 +1582,171 @@ body.menu-open .chapter-rail {
 .map-link {
   margin-top: var(--s-5);
 }
+
+/* --------------------------------------------------------------------------
+   17. Cinema — a pinned, scroll-driven scene for the flagship project.
+   The stage is sticky paper; the photograph is a print laid on it that grows
+   as the reader advances, stepping through one real day (noon → dusk → night)
+   while the copy changes with it. Only transform / opacity animate, and the
+   whole thing degrades to a plain block without JS or with reduced motion.
+   -------------------------------------------------------------------------- */
+.cinema {
+  position: relative;
+  height: 340vh; /* the scroll runway the sticky stage plays across */
+}
+.cinema__stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.25rem, 3.5vh, 2.75rem);
+  padding: calc(var(--header-h) + 2vh) var(--gutter) 5vh;
+}
+
+/* The print. Scale is written by initCinema() from the scroll progress. */
+.cinema__media {
+  position: relative;
+  width: min(88vw, 74rem);
+  aspect-ratio: 16 / 10;
+  max-height: 50vh;
+  overflow: hidden;
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius);
+  background: var(--c-paper-3);
+  transform: scale(var(--cinema-scale, 0.64));
+  transform-origin: center;
+  box-shadow: 0 40px 90px -55px rgba(18, 18, 15, 0.55);
+  will-change: transform;
+}
+.cinema__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1s var(--e-in-out);
+}
+.cinema__frame.is-on {
+  opacity: 1;
+}
+
+.cinema__copy {
+  width: 100%;
+  max-width: var(--w-max);
+  display: grid;
+  gap: var(--s-4);
+}
+.cinema__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-3) var(--s-5);
+}
+.cinema__title {
+  font-family: var(--f-display);
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: var(--ls-display);
+}
+
+/* The three lines occupy the same box; only one is lit at a time. */
+.cinema__steps {
+  position: relative;
+  min-height: 4.5em;
+}
+.cinema__step {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  max-width: 44rem;
+  font-size: var(--t-lead);
+  color: var(--c-ink-dim);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.6s var(--e-out), transform 0.6s var(--e-out);
+}
+.cinema__step.is-on {
+  opacity: 1;
+  transform: none;
+}
+.cinema__figure {
+  font-family: var(--f-display);
+  font-size: 1.5em;
+  color: var(--c-ink);
+  margin-right: 0.35em;
+  font-variant-numeric: tabular-nums;
+}
+
+.cinema__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-line);
+}
+.cinema__dots {
+  display: flex;
+  gap: 0.5rem;
+}
+.cinema__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--c-line);
+  transition: background-color var(--d-base) var(--e-out),
+    border-color var(--d-base) var(--e-out);
+}
+.cinema__dot.is-on {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+}
+
+@media (max-width: 720px) {
+  .cinema {
+    height: 300vh;
+  }
+  .cinema__media {
+    max-height: 38vh;
+  }
+  .cinema__steps {
+    min-height: 6.5em;
+  }
+}
+
+/* No JS, no ScrollTrigger, or reduced motion: a plain stacked block. */
+.cinema.is-static {
+  height: auto;
+}
+.cinema.is-static .cinema__stage {
+  position: static;
+  height: auto;
+  padding-block: var(--s-section);
+}
+.cinema.is-static .cinema__media {
+  transform: none;
+  max-height: none;
+}
+.cinema.is-static .cinema__frame:not(.is-on) {
+  display: none;
+}
+.cinema.is-static .cinema__steps {
+  min-height: 0;
+  display: grid;
+  gap: var(--s-4);
+}
+.cinema.is-static .cinema__step {
+  position: static;
+  opacity: 1;
+  transform: none;
+}
+.cinema.is-static .cinema__dots {
+  display: none;
+}
