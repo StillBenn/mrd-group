@@ -341,56 +341,6 @@ function initParallax() {
 }
 
 /* --------------------------------------------------------------------------
-   Cinema — the flagship project as a pinned, scroll-driven scene. The sticky
-   stage stays on paper while the print grows and the day advances through the
-   project's real photographs, one line of copy per frame.
-
-   Without ScrollTrigger (or under reduced motion) the section falls back to a
-   plain stacked block via .is-static — the content is identical either way.
-   -------------------------------------------------------------------------- */
-function initCinema() {
-  const root = $(".cinema");
-  if (!root) return;
-
-  const stage = $(".cinema__stage", root);
-  const frames = $$(".cinema__frame", root);
-  const steps = $$(".cinema__step", root);
-  const dots = $$(".cinema__dot", root);
-
-  if (reduceMotion || !window.ScrollTrigger || frames.length < 2) {
-    root.classList.add("is-static");
-    return;
-  }
-
-  /* Frame boundaries along the section's own progress. The first slice is
-     spent growing the print, so the reader sees the scene assemble before the
-     day starts moving. */
-  const GROW_UNTIL = 0.16;
-  const at = (p) => (p < 0.44 ? 0 : p < 0.72 ? 1 : 2);
-  let shown = -1;
-
-  const paint = (p) => {
-    const grow = Math.min(1, p / GROW_UNTIL);
-    stage.style.setProperty("--cinema-scale", (0.64 + grow * 0.36).toFixed(3));
-    const i = at(p);
-    if (i === shown) return; // only touch classes when the frame actually changes
-    shown = i;
-    frames.forEach((f, n) => f.classList.toggle("is-on", n === i));
-    steps.forEach((s, n) => s.classList.toggle("is-on", n === i));
-    dots.forEach((d, n) => d.classList.toggle("is-on", n === i));
-  };
-
-  window.ScrollTrigger.create({
-    trigger: root,
-    start: "top top",
-    end: "bottom bottom",
-    scrub: 0.4,
-    onUpdate: (self) => paint(self.progress),
-  });
-  paint(0);
-}
-
-/* --------------------------------------------------------------------------
    WhatsApp prefill — every wa.me link gets a message tuned to the page's
    sector, so a tap opens WhatsApp with the right context already typed.
    -------------------------------------------------------------------------- */
@@ -1013,7 +963,6 @@ async function initStage() {
   initCarousel();
   initLightbox();
   initChapterRail(lenis);
-  initCinema();
   initParallax();
   if (window.ScrollTrigger) window.ScrollTrigger.refresh();
   loader.finish();
