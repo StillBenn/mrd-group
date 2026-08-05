@@ -326,6 +326,34 @@ function initChapterRail(lenis) {
 }
 
 /* --------------------------------------------------------------------------
+   Parallax depth — the sector media drifts a little slower than the copy as
+   its section passes, so foreground text and midground image separate into
+   layers instead of moving as one flat plane. Driven by a scrubbed
+   ScrollTrigger (GSAP owns the frame; no second loop), transform only.
+   -------------------------------------------------------------------------- */
+function initParallax() {
+  if (reduceMotion || !window.gsap || !window.ScrollTrigger) return;
+
+  $$(".sector__media").forEach((media) => {
+    const sector = media.closest(".sector") || media;
+    window.gsap.fromTo(
+      media,
+      { y: 34 },
+      {
+        y: -34,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sector,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 0.6,
+        },
+      }
+    );
+  });
+}
+
+/* --------------------------------------------------------------------------
    WhatsApp prefill — every wa.me link gets a message tuned to the page's
    sector, so a tap opens WhatsApp with the right context already typed.
    -------------------------------------------------------------------------- */
@@ -446,8 +474,11 @@ function initCountUp() {
   const nums = $$("[data-count]");
   if (!nums.length) return;
 
+  const statOf = (el) => el.closest(".stat");
   const settle = (el) => {
     el.textContent = el.dataset.count;
+    const stat = statOf(el);
+    if (stat) stat.classList.add("is-counted");
   };
   if (reduceMotion || !("IntersectionObserver" in window)) {
     nums.forEach(settle);
@@ -455,6 +486,8 @@ function initCountUp() {
   }
 
   const run = (el) => {
+    const stat = statOf(el);
+    if (stat) stat.classList.add("is-counted"); // draws the accent rule
     const target = parseFloat(el.dataset.count) || 0;
     const dur = 1500;
     let start = null;
@@ -473,8 +506,15 @@ function initCountUp() {
     (entries) => {
       entries.forEach((e) => {
         if (!e.isIntersecting) return;
-        run(e.target);
         io.unobserve(e.target);
+        /* Stagger by the figure's position in the band so the four numbers
+           land in sequence, not all at once — a cinematic proof beat. */
+        const stat = statOf(e.target);
+        const idx =
+          stat && stat.parentElement
+            ? [...stat.parentElement.children].indexOf(stat)
+            : 0;
+        setTimeout(() => run(e.target), Math.min(Math.max(idx, 0), 5) * 140);
       });
     },
     { threshold: 0.5 }
@@ -924,6 +964,7 @@ async function initStage() {
   initCarousel();
   initLightbox();
   initChapterRail(lenis);
+  initParallax();
   if (window.ScrollTrigger) window.ScrollTrigger.refresh();
   loader.finish();
 

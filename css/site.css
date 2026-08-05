@@ -1533,3 +1533,30 @@ body.menu-open .chapter-rail {
     transition: none;
   }
 }
+
+/* 16d. Stat rhythm — a short accent rule draws under each figure as it lands,
+   turning the proof band from four numbers into a sequenced beat. JS staggers
+   the count and flips .is-counted; CSS draws the rule. */
+.stat__value {
+  position: relative;
+}
+.stat__value::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.32em;
+  width: 1.75rem;
+  height: 2px;
+  background: var(--c-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--d-base) var(--e-out);
+}
+.stat.is-counted .stat__value::after {
+  transform: scaleX(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stat__value::after {
+    transition: none;
+  }
+}
