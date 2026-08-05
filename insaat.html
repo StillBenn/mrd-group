@@ -168,6 +168,34 @@
     </div>
   </section>
 
+  <!-- ============ YAPI SİSTEMİ (3B) ============
+       A procedural concrete frame, modelled in Blender and raised storey by
+       storey as the reader scrolls. Progressive enhancement: without WebGL or
+       with reduced motion the section keeps its text and drops the canvas. -->
+  <section class="frame" id="yapi" aria-labelledby="frame-title">
+    <div class="frame__stage">
+      <div class="frame__canvas-wrap" aria-hidden="true">
+        <canvas class="frame__canvas"></canvas>
+      </div>
+
+      <div class="frame__copy">
+        <p class="t-label t-label--accent">Yapı sistemi</p>
+        <h2 class="t-h2" id="frame-title" style="margin-top: var(--s-4)">
+          Zeminden çatıya
+        </h2>
+        <p style="margin-top: var(--s-5); max-width: 30rem">
+          Temel, kolonlar, döşemeler ve çekirdek. Bir yapıyı ayakta tutan
+          sistem, kaplama gelmeden önce kurulur — ve işin kalitesi burada
+          belli olur.
+        </p>
+        <p class="frame__meta">
+          <span class="frame__counter" aria-live="off">Kat 0 / 6</span>
+          <span class="frame__hint">Kaydırarak yapıyı yükseltin</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
   <section class="section section--band" data-scene="approach">
     <div class="wrap">
       <div class="section-head">

@@ -341,6 +341,96 @@ function initParallax() {
 }
 
 /* --------------------------------------------------------------------------
+   Building maquette — the construction page's 3D frame. three.js and the model
+   are ~760 KB, so they are fetched only when the section is actually coming
+   into view, and the renderer is stopped whenever it leaves. Every failure
+   path (no WebGL, no ScrollTrigger, reduced motion, network) leaves the
+   section in its static text form.
+   -------------------------------------------------------------------------- */
+function initBuildingFrame() {
+  const root = $(".frame");
+  if (!root) return;
+
+  const canvas = $(".frame__canvas", root);
+  const counter = $(".frame__counter", root);
+
+  const bail = () => root.classList.add("is-static");
+
+  if (reduceMotion || !window.ScrollTrigger || !("IntersectionObserver" in window)) return bail();
+
+  /* Cheap WebGL probe before pulling 760 KB down the wire. */
+  try {
+    const probe = document.createElement("canvas");
+    if (!(probe.getContext("webgl") || probe.getContext("experimental-webgl"))) return bail();
+  } catch (e) {
+    return bail();
+  }
+
+  let scene = null;
+  let loading = false;
+
+  const attach = async () => {
+    if (scene || loading) return;
+    loading = true;
+    try {
+      const mod = await import("./building.js");
+      scene = await mod.createBuilding(canvas);
+    } catch (err) {
+      bail();
+      loading = false;
+      return;
+    }
+    loading = false;
+
+    const floors = scene.floorCount || 6;
+    window.ScrollTrigger.create({
+      trigger: root,
+      start: "top top",
+      end: "bottom bottom",
+      scrub: 0.5,
+      onUpdate: (self) => {
+        scene.setProgress(self.progress);
+        if (counter) {
+          const built = Math.min(floors, Math.round(self.progress * floors));
+          const label = "Kat " + built + " / " + floors;
+          if (counter.textContent !== label) counter.textContent = label;
+        }
+      },
+    });
+
+    /* The pointer tilts the maquette a few degrees; it never drives a camera. */
+    root.addEventListener(
+      "pointermove",
+      (e) => {
+        const r = root.getBoundingClientRect();
+        scene.setPointer(
+          ((e.clientX - r.left) / r.width) * 2 - 1,
+          ((e.clientY - r.top) / r.height) * 2 - 1
+        );
+      },
+      { passive: true }
+    );
+
+    window.ScrollTrigger.refresh();
+  };
+
+  /* Load a screen early, and stop rendering the moment it is off-screen. */
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((en) => {
+        if (en.isIntersecting) {
+          attach().then(() => scene && scene.start());
+        } else if (scene) {
+          scene.stop();
+        }
+      });
+    },
+    { rootMargin: "100% 0px 100% 0px", threshold: 0 }
+  );
+  io.observe(root);
+}
+
+/* --------------------------------------------------------------------------
    WhatsApp prefill — every wa.me link gets a message tuned to the page's
    sector, so a tap opens WhatsApp with the right context already typed.
    -------------------------------------------------------------------------- */
@@ -963,6 +1053,7 @@ async function initStage() {
   initCarousel();
   initLightbox();
   initChapterRail(lenis);
+  initBuildingFrame();
   initParallax();
   if (window.ScrollTrigger) window.ScrollTrigger.refresh();
   loader.finish();

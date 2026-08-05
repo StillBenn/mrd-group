@@ -1582,3 +1582,82 @@ body.menu-open .chapter-rail {
 .map-link {
   margin-top: var(--s-5);
 }
+
+/* --------------------------------------------------------------------------
+   17. Building frame — the 3D maquette on the construction page. A sticky
+   stage plays across a scroll runway while the storeys rise. The canvas is
+   decorative; every word beside it is real HTML, and without WebGL the
+   section simply loses the canvas and keeps the copy.
+   -------------------------------------------------------------------------- */
+.frame {
+  position: relative;
+  height: 320vh;
+}
+.frame__stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: grid;
+  align-items: center;
+  gap: var(--s-6);
+  grid-template-columns: 1fr;
+  max-width: var(--w-max);
+  margin-inline: auto;
+  padding: calc(var(--header-h) + 3vh) var(--gutter) 6vh;
+}
+@media (min-width: 900px) {
+  .frame__stage {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: var(--s-8);
+  }
+}
+.frame__canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: min(58vh, 34rem);
+}
+.frame__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.frame__copy {
+  align-self: center;
+}
+.frame__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-3) var(--s-5);
+  margin-top: var(--s-6);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-line);
+  font-size: var(--t-small);
+}
+.frame__counter {
+  font-family: var(--f-display);
+  font-size: var(--t-h3);
+  color: var(--c-accent);
+  font-variant-numeric: tabular-nums;
+}
+.frame__hint {
+  color: var(--c-ink-faint);
+}
+
+/* No WebGL, no JS, or reduced motion: collapse the runway and drop the stage. */
+.frame.is-static {
+  height: auto;
+}
+.frame.is-static .frame__stage {
+  position: static;
+  height: auto;
+  padding-block: var(--s-section);
+  grid-template-columns: 1fr;
+}
+.frame.is-static .frame__canvas-wrap,
+.frame.is-static .frame__hint {
+  display: none;
+}
+.frame.is-static .frame__counter {
+  display: none;
+}

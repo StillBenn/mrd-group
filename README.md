@@ -18,6 +18,23 @@ CDN, so the site renders identically offline and on restricted networks:
 | --- | --- | --- |
 | GSAP + ScrollTrigger | 3.12.5 | Scroll-driven chapter progression |
 | Lenis | 1.1.14 | Smooth scrolling |
+| three.js + GLTFLoader | 0.160.0 | The building maquette on `insaat.html` only |
+
+three.js is **not** loaded site-wide. `initBuildingFrame()` imports it, and the
+model, only when the construction page's frame section approaches the viewport,
+and stops the renderer whenever it leaves. Every other page pays nothing.
+
+### The building maquette
+
+`img/building.glb` (52 KB, 312 faces) is generated, not hand-modelled: a
+Blender Python script builds the slabs, columns and service core, then exports
+each storey as its own named object (`Floor_0` … `Floor_5`). Those names are
+what let `js/building.js` raise the storeys one at a time as the reader
+scrolls. To change the building, edit the script and re-run:
+
+```bash
+blender --background --python building.py
+```
 
 There is no 3D library. The background is a single full-screen fragment shader
 written against raw WebGL in `js/scene.js` — one draw call per frame, no
