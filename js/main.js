@@ -452,8 +452,10 @@ function initCountUp() {
   if (!nums.length) return;
 
   const statOf = (el) => el.closest(".stat");
+  /* Turkish thousands separator: 16500 must read as 16.500, not 16500. */
+  const fmt = (v) => Math.round(v).toLocaleString("tr-TR");
   const settle = (el) => {
-    el.textContent = el.dataset.count;
+    el.textContent = fmt(parseFloat(el.dataset.count) || 0);
     const stat = statOf(el);
     if (stat) stat.classList.add("is-counted");
   };
@@ -472,9 +474,9 @@ function initCountUp() {
       if (start === null) start = now;
       const t = Math.min(1, (now - start) / dur);
       const eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = Math.round(target * eased).toString();
+      el.textContent = fmt(target * eased);
       if (t < 1) requestAnimationFrame(step);
-      else el.textContent = target.toString();
+      else el.textContent = fmt(target);
     };
     requestAnimationFrame(step);
   };
