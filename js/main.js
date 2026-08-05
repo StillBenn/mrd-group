@@ -549,7 +549,10 @@ function initCarousel() {
     (d) => typeof d === "string" && d.startsWith("data:image")
   );
 
-  const TOTAL = 12;
+  /* Market ships the client's own REAL Cizre Park photos (6); construction and
+     energy still use the 12 sample placeholders until their real photos arrive. */
+  const COUNTS = { market: 6 };
+  const TOTAL = COUNTS[sector] || 12;
 
   /* Default sample photos shipped per sector (self-hosted). Admin uploads from
      the panel take the leading slots and push these back. */

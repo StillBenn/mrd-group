@@ -129,11 +129,12 @@ If a custom domain is added later, update in this order:
 
 ## Gallery photos
 
-`img/gallery/<sector>-01…12.jpg` are self-hosted **sample** photos (retail /
-construction / solar) sourced from Unsplash under the Unsplash License (free
-commercial use, no attribution required). They are placeholders to show the
-carousel with real imagery — replace them with the company's own photos (via
-the `/panel` tool or by dropping files into `img/gallery/` with the same names).
+`img/gallery/market-01…06.jpg` are the company's **own photos** of Cizre Park
+Alışveriş ve Yaşam Merkezi. `img/gallery/insaat-*` and `img/gallery/enerji-*`
+are self-hosted **sample** photos (construction / solar) from Unsplash under the
+Unsplash License (free commercial use, no attribution required) — placeholders
+until the company's own construction and energy photos arrive (via the `/panel`
+tool or by dropping files into `img/gallery/` with the same names).
 
 ## Placeholder content
 
