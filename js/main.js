@@ -393,29 +393,6 @@ function initSectorHover(scene) {
 }
 
 /* --------------------------------------------------------------------------
-   Magnetic controls — buttons and arrow links ease toward the cursor while
-   hovered and spring back on leave. Driven by GSAP so it never fights the
-   element's own colour transitions. Desktop pointers only.
-   -------------------------------------------------------------------------- */
-function initMagnetic() {
-  if (reduceMotion || !window.gsap) return;
-  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-
-  $$(".btn, .link-arrow").forEach((el) => {
-    const pull = 0.28;
-    el.addEventListener("pointermove", (e) => {
-      const r = el.getBoundingClientRect();
-      const mx = e.clientX - (r.left + r.width / 2);
-      const my = e.clientY - (r.top + r.height / 2);
-      window.gsap.to(el, { x: mx * pull, y: my * pull, duration: 0.4, ease: "power3.out" });
-    });
-    el.addEventListener("pointerleave", () => {
-      window.gsap.to(el, { x: 0, y: 0, duration: 0.6, ease: "elastic.out(1, 0.45)" });
-    });
-  });
-}
-
-/* --------------------------------------------------------------------------
    Page transitions — a paper curtain rises to cover the screen before an
    internal navigation. Combined with the loader curtain on the incoming page,
    the separate HTML pages feel like one continuous application.
@@ -554,6 +531,20 @@ function initCarousel() {
   const COUNTS = { market: 6 };
   const TOTAL = COUNTS[sector] || 12;
 
+  /* Captions for the real Cizre Park photos — shown in the full-screen viewer.
+     Placeholder sectors stay uncaptioned. */
+  const CAPTIONS = {
+    market: [
+      "Açık hava çarşısı",
+      "Cizre Park — dış cephe",
+      "Gün batımında Cizre Park",
+      "Gece promenadı",
+      "Play Park — çocuk eğlence alanı",
+      "İç mekân — yeme, içme ve sosyal alan",
+    ],
+  };
+  const captionAt = (i) => (CAPTIONS[sector] && CAPTIONS[sector][i]) || "";
+
   /* Default sample photos shipped per sector (self-hosted). Admin uploads from
      the panel take the leading slots and push these back. */
   const defaults = [];
@@ -579,7 +570,7 @@ function initCarousel() {
       slide.className = "carousel__slide";
       slide.setAttribute("aria-label", label + " görseli " + (i + 1));
       if (sources[i]) {
-        slide.setAttribute("data-caption", "");
+        slide.setAttribute("data-caption", captionAt(i));
         const img = document.createElement("img");
         img.alt = label + " görseli " + (i + 1);
         img.loading = "lazy";
@@ -743,44 +734,63 @@ function initCarousel() {
    placeholders. Click handling is delegated.
    -------------------------------------------------------------------------- */
 function initLightbox() {
-  if (!$(".carousel__slide")) return;
+  const slides = $$(".carousel__slide");
+  if (!slides.length) return;
+
+  const svg = (path, w) =>
+    '<svg viewBox="0 0 24 24" width="' + w + '" height="' + w +
+    '" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="' +
+    path + '"/></svg>';
 
   const box = document.createElement("div");
   box.className = "lightbox";
   box.setAttribute("role", "dialog");
   box.setAttribute("aria-modal", "true");
   box.setAttribute("aria-hidden", "true");
+  box.setAttribute("aria-label", "Görsel galerisi");
   box.innerHTML =
-    '<button class="lightbox__close" type="button" aria-label="Kapat">' +
-    '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
-    "</button>" +
-    '<figure class="lightbox__panel"><figcaption class="lightbox__caption"></figcaption></figure>';
+    '<button class="lightbox__close" type="button" aria-label="Kapat">' + svg("M6 6l12 12M18 6L6 18", 20) + "</button>" +
+    '<button class="lightbox__nav lightbox__nav--prev" type="button" aria-label="Önceki görsel">' + svg("M15 5l-7 7 7 7", 24) + "</button>" +
+    '<figure class="lightbox__panel"></figure>' +
+    '<button class="lightbox__nav lightbox__nav--next" type="button" aria-label="Sonraki görsel">' + svg("M9 5l7 7-7 7", 24) + "</button>" +
+    '<div class="lightbox__bar"><span class="lightbox__caption"></span><span class="lightbox__count"></span></div>';
   document.body.appendChild(box);
 
   const panel = box.querySelector(".lightbox__panel");
-  const caption = box.querySelector(".lightbox__caption");
+  const captionEl = box.querySelector(".lightbox__caption");
+  const countEl = box.querySelector(".lightbox__count");
+  let index = 0;
   let lastFocus = null;
 
-  const open = (tile) => {
-    const img = tile.querySelector("img");
+  const render = () => {
+    const tile = slides[index];
     panel.querySelectorAll("img").forEach((n) => n.remove());
-    const text = tile.getAttribute("data-caption") || "Görsel eklenecek";
-    if (img) {
+    const src = tile.querySelector("img");
+    const caption = tile.getAttribute("data-caption") || "";
+    if (src) {
       const big = document.createElement("img");
-      big.src = img.currentSrc || img.src;
-      big.alt = img.alt || "";
-      panel.insertBefore(big, caption);
-      caption.textContent = "";
-    } else {
-      caption.textContent = text;
+      big.src = src.currentSrc || src.src;
+      big.alt = src.alt || caption;
+      panel.appendChild(big);
     }
+    captionEl.textContent = caption;
+    countEl.textContent = index + 1 + " / " + slides.length;
+  };
+
+  /* Wrap around at the ends so the viewer feels like a continuous gallery. */
+  const go = (dir) => {
+    index = ((index + dir) % slides.length + slides.length) % slides.length;
+    render();
+  };
+  const openAt = (i) => {
+    index = ((i % slides.length) + slides.length) % slides.length;
+    render();
     lastFocus = document.activeElement;
     box.classList.add("is-open");
     box.setAttribute("aria-hidden", "false");
     document.documentElement.style.overflow = "hidden";
     box.querySelector(".lightbox__close").focus();
   };
-
   const close = () => {
     box.classList.remove("is-open");
     box.setAttribute("aria-hidden", "true");
@@ -788,16 +798,22 @@ function initLightbox() {
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   };
 
+  box.querySelector(".lightbox__nav--prev").addEventListener("click", (e) => { e.stopPropagation(); go(-1); });
+  box.querySelector(".lightbox__nav--next").addEventListener("click", (e) => { e.stopPropagation(); go(1); });
+
   document.addEventListener("click", (e) => {
     const tile = e.target.closest(".carousel__slide");
-    if (tile) {
-      open(tile);
+    if (tile && slides.indexOf(tile) > -1) {
+      openAt(slides.indexOf(tile));
       return;
     }
     if (e.target === box || e.target.closest(".lightbox__close")) close();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && box.classList.contains("is-open")) close();
+    if (!box.classList.contains("is-open")) return;
+    if (e.key === "Escape") close();
+    else if (e.key === "ArrowLeft") go(-1);
+    else if (e.key === "ArrowRight") go(1);
   });
 }
 
@@ -899,7 +915,6 @@ async function initStage() {
   initHeader();
   initFloatingCta();
   initPageTransitions();
-  initMagnetic();
   initWhatsappPrefill();
 
   initCursor();

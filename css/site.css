@@ -1261,6 +1261,51 @@ body.has-cursor .map-frame * {
 .lightbox__close:hover {
   background: rgba(233, 231, 226, 0.12);
 }
+/* Full-screen viewer: side navigation, caption + counter bar. */
+.lightbox__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-content: center;
+  color: var(--c-paper);
+  border: 1px solid rgba(233, 231, 226, 0.3);
+  border-radius: 50%;
+  background: transparent;
+  z-index: 2;
+  transition: background-color var(--d-fast) var(--e-out);
+}
+.lightbox__nav:hover {
+  background: rgba(233, 231, 226, 0.12);
+}
+.lightbox__nav--prev {
+  left: clamp(0.75rem, 4vw, 2.5rem);
+}
+.lightbox__nav--next {
+  right: clamp(0.75rem, 4vw, 2.5rem);
+}
+.lightbox__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(1rem, 4vw, 2rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  padding-inline: var(--s-6);
+}
+.lightbox__caption {
+  color: rgba(233, 231, 226, 0.9);
+}
+.lightbox__count {
+  font-size: var(--t-label);
+  letter-spacing: var(--ls-label);
+  color: rgba(233, 231, 226, 0.55);
+  font-variant-numeric: tabular-nums;
+}
 
 /* --------------------------------------------------------------------------
    14e. Coverflow carousel — centre slide sharp and full; neighbours peek in
@@ -1559,4 +1604,36 @@ body.menu-open .chapter-rail {
   .stat__value::after {
     transition: none;
   }
+}
+
+/* 16e. Amenities — the real Cizre Park services as a restrained icon grid.
+   Hairline separators, a single accent per mark; no cards, no fills. */
+.amenities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: var(--s-6) var(--s-6);
+  margin-top: var(--s-8);
+}
+.amenity {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding-bottom: var(--s-5);
+  border-bottom: 1px solid var(--c-line-soft);
+  font-size: var(--t-small);
+  color: var(--c-ink-dim);
+}
+.amenity__icon {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-content: center;
+  border: 1px solid var(--c-line);
+  border-radius: 50%;
+  color: var(--sector-accent, var(--c-accent));
+}
+.amenity__icon svg {
+  width: 20px;
+  height: 20px;
 }
