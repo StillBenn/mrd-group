@@ -1525,6 +1525,12 @@ body.menu-open .chapter-rail {
   transform: none;
 }
 @media (prefers-reduced-motion: reduce) {
+  /* The rail stays — it is navigation. Only its motion is removed, and it is
+     shown immediately rather than fading in. */
+  .chapter-rail {
+    opacity: 1;
+    transition: none;
+  }
   .chapter-rail__label,
   .chapter-rail__dot {
     transition: none;

@@ -274,7 +274,10 @@ function initHeroIntro() {
 function initChapterRail(lenis) {
   const sections = $$("[data-scene]");
   if (sections.length < 4) return; // the multi-chapter homepage story only
-  if (reduceMotion || !("IntersectionObserver" in window)) return;
+  /* The rail is navigation, not decoration, so reduced-motion keeps it — CSS
+     drops its transitions. Only a missing IntersectionObserver disables it,
+     since without one no node could ever be marked current. */
+  if (!("IntersectionObserver" in window)) return;
 
   const LABELS = {
     intro: "Giriş", group: "Kurumsal", market: "Market", insaat: "İnşaat",
@@ -303,14 +306,17 @@ function initChapterRail(lenis) {
     a.addEventListener("click", (e) => {
       e.preventDefault();
       if (lenis && lenis.scrollTo) lenis.scrollTo(sec, { offset: -70 });
-      else sec.scrollIntoView({ behavior: "smooth" });
+      else sec.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
     });
     rail.appendChild(a);
     return { sec, a };
   });
 
   document.body.appendChild(rail);
-  requestAnimationFrame(() => rail.classList.add("is-ready"));
+  /* A timeout, not requestAnimationFrame: rAF never fires while the tab is in
+     the background, which would leave the rail stuck at opacity 0 for anyone
+     who opened the page in a new tab. The small delay still lets the fade run. */
+  setTimeout(() => rail.classList.add("is-ready"), 30);
 
   const setActive = (sec) =>
     items.forEach((it) => it.a.classList.toggle("is-active", it.sec === sec));
