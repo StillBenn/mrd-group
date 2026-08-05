@@ -608,42 +608,50 @@ function initCarousel() {
     root.appendChild(next);
 
     const slides = [...track.children];
-    /* Start on the second slide so the centre image always has a neighbour on
-       BOTH sides — resting on index 0 leaves the left half empty and reads as
-       a layout mistake. The two extreme ends stay reachable by arrow / drag. */
-    let active = slides.length > 2 ? 1 : 0;
+    let active = 0; // the loop wraps, so every index has neighbours on both sides
     let dragging = false;
     let moved = false;
     let startX = 0;
-    let baseOffset = 0;
     let step = 0;
+    const n = slides.length;
 
-    /* Measure with layout metrics (offsetLeft / offsetWidth), NOT
-       getBoundingClientRect: the active slide is scale(1) and its neighbours
-       scale(0.82), and a bounding rect reports the *scaled* size. Using it made
-       the centring drift by the scale gap for every slide past the first, so
-       the active image never landed in the middle after a move. */
+    /* Distance between neighbour centres: slide width plus a small gap. */
     const measure = () => {
-      step = slides.length > 1
-        ? slides[1].offsetLeft - slides[0].offsetLeft
-        : slides[0].offsetWidth;
+      const w = slides[0] ? slides[0].offsetWidth : 0;
+      step = w + Math.min(w * 0.06 + 20, 44);
     };
 
-    const centeredOffset = () => {
-      const s = slides[active];
-      return viewport.clientWidth / 2 - (s.offsetLeft + s.offsetWidth / 2);
+    /* Shortest signed distance from the active slide to slide i, wrapping at
+       the ends — this is what makes the coverflow an endless loop with a
+       neighbour always present on both sides. */
+    const dist = (i) => {
+      let d = i - active;
+      if (d > n / 2) d -= n;
+      if (d < -n / 2) d += n;
+      return d;
     };
 
-    const layout = (withTransition) => {
-      track.style.transition = withTransition ? "" : "none";
-      track.style.transform = "translateX(" + centeredOffset() + "px)";
-      slides.forEach((s, i) => s.classList.toggle("is-active", i === active));
-      prev.disabled = active === 0;
-      next.disabled = active === slides.length - 1;
+    const layout = (animate) => {
+      if (!animate) slides.forEach((s) => (s.style.transition = "none"));
+      slides.forEach((s, i) => {
+        const d = dist(i);
+        const abs = Math.abs(d);
+        const scale = d === 0 ? 1 : 0.82;
+        s.style.transform =
+          "translate(calc(-50% + " + d * step + "px), -50%) scale(" + scale + ")";
+        s.style.opacity = abs <= 1 ? (d === 0 ? "1" : "0.55") : "0";
+        s.style.zIndex = String(20 - abs);
+        s.style.pointerEvents = abs <= 1 ? "auto" : "none";
+        s.classList.toggle("is-active", d === 0);
+      });
+      if (!animate) {
+        void viewport.offsetWidth; // reflow so the cleared transition settles
+        slides.forEach((s) => (s.style.transition = ""));
+      }
     };
 
     const setActive = (i) => {
-      active = Math.max(0, Math.min(slides.length - 1, i));
+      active = ((i % n) + n) % n; // wrap both ways — infinite
       layout(true);
     };
 
@@ -660,51 +668,37 @@ function initCarousel() {
           return;
         }
         if (i !== active) {
-          e.stopPropagation(); // do not open the lightbox for a side slide
+          e.stopPropagation(); // side slide focuses, does not open the viewer
           setActive(i);
         }
         // active slide falls through to the delegated lightbox handler
       });
     });
 
-    /* Drag / swipe */
+    /* Swipe — decide direction on release; a real click keeps `moved` false so
+       the viewer still opens. No pointer capture (it swallowed the click). */
     viewport.addEventListener("pointerdown", (e) => {
       dragging = true;
       moved = false;
       startX = e.clientX;
       measure();
-      baseOffset = centeredOffset();
-      track.style.transition = "none";
-      viewport.setPointerCapture && viewport.setPointerCapture(e.pointerId);
     });
     viewport.addEventListener("pointermove", (e) => {
       if (!dragging) return;
-      const dx = e.clientX - startX;
-      if (Math.abs(dx) > 4) moved = true;
-      track.style.transform = "translateX(" + (baseOffset + dx) + "px)";
+      if (Math.abs(e.clientX - startX) > 8) moved = true;
     });
     const endDrag = (e) => {
       if (!dragging) return;
       dragging = false;
       const dx = e.clientX - startX;
-      if (Math.abs(dx) > 4 && step) setActive(active - Math.round(dx / step));
-      else layout(true);
+      if (step && Math.abs(dx) > 40) setActive(active + (dx < 0 ? 1 : -1));
     };
     viewport.addEventListener("pointerup", endDrag);
     viewport.addEventListener("pointercancel", endDrag);
 
-    /* Gentle autoplay, ping-pong, pauses on hover / interaction */
-    let dir = 1;
+    /* Gentle autoplay — always forward, wraps seamlessly, pauses on interaction. */
     let timer = null;
-    /* Auto-play ping-pongs between the second and second-to-last slide so it
-       never rests on a bare-sided end; the true ends stay manual-only. */
-    const autoMin = slides.length > 2 ? 1 : 0;
-    const autoMax = slides.length > 2 ? slides.length - 2 : slides.length - 1;
-    const tick = () => {
-      if (active >= autoMax) dir = -1;
-      else if (active <= autoMin) dir = 1;
-      setActive(active + dir);
-    };
+    const tick = () => setActive(active + 1);
     const startAuto = () => {
       if (reduceMotion || timer) return;
       timer = setInterval(tick, 4200);
@@ -718,7 +712,7 @@ function initCarousel() {
     root.addEventListener("pointerenter", stopAuto);
     root.addEventListener("pointerleave", startAuto);
     root.addEventListener("focusin", stopAuto);
-    [prev, next].forEach((b) => b.addEventListener("click", () => { stopAuto(); }));
+    [prev, next].forEach((b) => b.addEventListener("click", stopAuto));
     startAuto();
 
     window.addEventListener("resize", () => {
@@ -894,13 +888,6 @@ async function initStage() {
 (async function boot() {
   document.body.classList.add("is-loading");
   applyConfig();
-
-  /* Static paper grain over the whole page — gives the flat light ground the
-     tooth of real paper stock. One composited layer, no per-frame cost. */
-  const grain = document.createElement("div");
-  grain.className = "paper-grain";
-  grain.setAttribute("aria-hidden", "true");
-  document.body.appendChild(grain);
 
   /* Arm the hero entrance now (sets per-line delays; the hero stays hidden
      until play() runs as the loader lifts). */

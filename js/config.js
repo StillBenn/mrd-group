@@ -13,7 +13,7 @@ export const SITE = {
   baseUrl: "https://stillbenn.github.io/mrd-group/",
 
   legalName: "MRD Group", // TODO: full registered trade name
-  city: "Gaziantep",
+  city: "", // location left blank until the client confirms it
   country: "Türkiye",
 
   /* Real line published on the client's own site (cizreparkavm.com.tr).
