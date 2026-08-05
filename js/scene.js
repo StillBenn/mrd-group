@@ -125,7 +125,7 @@ float field(vec2 p) {
     noise(p * 0.85 + vec2(t * 0.8, uWarp + 5.2))
   );
   return ridged(p * 1.02 + (w - 0.5) * 1.15 + vec2(uWarp, 0.0))
-       + markH(p) * 2.2;
+       + markH(p) * 0.9;
 }
 
 void main() {
