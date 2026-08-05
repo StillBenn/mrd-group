@@ -161,8 +161,8 @@ Still provisional:
 - **WhatsApp number** — the one placeholder left in `js/config.js`.
 - **Company identity** — full registered trade name and street address. No city
   is claimed anywhere; `SITE.city` is intentionally blank.
-- **Sector artwork** — `img/sectors/*.svg` are technical-drawing placeholders,
-  not photography.
+- **Sector artwork** — `img/sectors/market.jpg` is the company's own photo;
+  `insaat.jpg` and `enerji.jpg` are Unsplash samples until real ones arrive.
 - **Construction / energy photography** — see [Gallery photos](#gallery-photos).
 - **Map** — the embed points at Cizre with an approximate marker, and is
   labelled as approximate; replace with exact coordinates when supplied.
