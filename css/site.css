@@ -1012,14 +1012,18 @@ body.has-cursor .map-frame * {
   color: rgba(233, 231, 226, 0.45);
   margin-bottom: var(--s-4);
 }
-.site-footer li + li {
-  margin-top: var(--s-3);
-}
 .site-footer p,
 .site-footer a {
   color: rgba(233, 231, 226, 0.72);
   font-size: var(--t-small);
   transition: color var(--d-fast) var(--e-out);
+}
+/* Footer links are the site's densest tap targets — a 17px line is hard to hit
+   with a thumb, and one of them is the phone number. Padding lifts each link
+   towards the 44px guideline without changing the visual rhythm. */
+.site-footer li a {
+  display: inline-block;
+  padding-block: 0.55rem;
 }
 .site-footer a:hover {
   color: var(--c-paper);
