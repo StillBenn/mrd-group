@@ -128,36 +128,6 @@ body.is-leaving .page-wipe__logo {
 .cursor.is-hidden {
   opacity: 0;
 }
-/* A label that rides with the dot over media wells and cards. */
-.cursor__label {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform: translate(14px, -50%) scale(0.8);
-  transform-origin: left center;
-  white-space: nowrap;
-  font-family: var(--f-body);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--c-paper);
-  background: var(--c-ink);
-  padding: 0.4rem 0.7rem;
-  border-radius: 2px;
-  opacity: 0;
-  transition: opacity var(--d-fast) var(--e-out),
-    transform var(--d-fast) var(--e-out);
-}
-.cursor.is-labelled .cursor__label {
-  opacity: 1;
-  transform: translate(16px, -50%) scale(1);
-}
-/* When a label is showing, calm the dot so the two do not compete. */
-.cursor.is-labelled .cursor__dot {
-  transform: scale(1.4);
-}
-
 /* The footer is the same near-black as the dot, so the dot would vanish
    there. Over dark regions it flips to paper. */
 .cursor.is-inverse .cursor__dot {

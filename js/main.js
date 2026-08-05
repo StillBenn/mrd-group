@@ -112,18 +112,6 @@ function initCursor() {
 
   document.body.classList.add("has-cursor");
 
-  /* Cross-navigation cards are links; give them the "İncele" label without
-     editing every page's markup. */
-  $$(".cross__item").forEach((el) => {
-    if (!el.hasAttribute("data-cursor")) el.setAttribute("data-cursor", "İncele");
-  });
-
-  /* A small label rides with the dot over elements that declare data-cursor
-     (e.g. media wells say "İncele"); it stays empty otherwise. */
-  const label = document.createElement("span");
-  label.className = "cursor__label";
-  el.appendChild(label);
-
   /* Regions painted in the same near-black as the dot; over these it flips
      to paper so it never disappears. */
   const darkRegions = ".site-footer, .wa-float";
@@ -139,25 +127,18 @@ function initCursor() {
     { passive: true }
   );
 
-  const hoverables = "a, button, [data-cursor]";
+  /* The dot only grows over interactive elements. No text label rides with it:
+     a word pinned to the pointer covers the very copy it sits on, and the
+     element's own hover state (rule, arrow, colour) already says "clickable". */
   document.addEventListener("pointerover", (e) => {
     const el2 = e.target instanceof Element ? e.target : null;
-    if (el2 && el2.closest(hoverables)) el.classList.add("is-hover");
+    if (el2 && el2.closest("a, button")) el.classList.add("is-hover");
     if (el2 && el2.closest(".map-frame")) el.classList.add("is-hidden");
-    const labelled = el2 && el2.closest("[data-cursor]");
-    if (labelled) {
-      label.textContent = labelled.getAttribute("data-cursor") || "";
-      el.classList.add("is-labelled");
-    }
   });
   document.addEventListener("pointerout", (e) => {
     const el2 = e.target instanceof Element ? e.target : null;
-    if (el2 && el2.closest(hoverables)) el.classList.remove("is-hover");
+    if (el2 && el2.closest("a, button")) el.classList.remove("is-hover");
     if (el2 && el2.closest(".map-frame")) el.classList.remove("is-hidden");
-    if (el2 && el2.closest("[data-cursor]")) {
-      el.classList.remove("is-labelled");
-      label.textContent = "";
-    }
   });
 }
 
