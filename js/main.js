@@ -341,37 +341,6 @@ function initParallax() {
 }
 
 /* --------------------------------------------------------------------------
-   Embossed chapter mark — as a sector section takes the screen, its name is
-   pressed into the paper ground itself. The word has no colour: it exists as
-   relief, so it only surfaces where the lamp grazes it and disappears again
-   as the light moves on. The shader owns the effect; this only says which
-   word, and when.
-   -------------------------------------------------------------------------- */
-function initMark(scene) {
-  if (!scene || typeof scene.setMark !== "function") return;
-  if (reduceMotion || !("IntersectionObserver" in window)) return;
-
-  const LABEL = { market: "MARKET", insaat: "İNŞAAT", enerji: "ENERJİ" };
-  const sections = $$("[data-scene]").filter((s) => LABEL[s.dataset.scene]);
-  if (!sections.length) return;
-
-  /* Only a section holding the middle band of the screen counts as current,
-     so the word never flickers between two neighbours. */
-  let current = null;
-  const io = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((en) => {
-        if (en.isIntersecting) current = en.target;
-        else if (current === en.target) current = null;
-      });
-      scene.setMark(current ? LABEL[current.dataset.scene] : "");
-    },
-    { rootMargin: "-40% 0px -40% 0px", threshold: 0 }
-  );
-  sections.forEach((s) => io.observe(s));
-}
-
-/* --------------------------------------------------------------------------
    WhatsApp prefill — every wa.me link gets a message tuned to the page's
    sector, so a tap opens WhatsApp with the right context already typed.
    -------------------------------------------------------------------------- */
@@ -933,7 +902,6 @@ async function initStage() {
   const lenis = initSmoothScroll();
   const scene = await initStage();
   initSectorHover(scene);
-  initMark(scene);
 
   /* Overall scroll progress (0..1) for the scene's shape on sector pages.
      Prefer Lenis' own progress (no layout read); otherwise fall back to a

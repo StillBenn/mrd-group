@@ -58,8 +58,6 @@ uniform vec3  uColor;     // chapter accent
 uniform float uWarp;
 uniform float uDepth;
 uniform vec3  uPaper;
-uniform sampler2D uMark;  // the chapter's word, blurred into a height mask
-uniform float uMarkAmt;   // 0 = absent, 1 = fully pressed in
 
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -103,20 +101,6 @@ float ridged(vec2 p) {
   return h;
 }
 
-/* The chapter's word, pressed into the sheet. The mask arrives already
-   blurred from the 2D canvas, so what reaches the height field is a smooth
-   swell rather than hard type — the lamp then finds its edges exactly the way
-   it finds the noise ridges, and the word only shows where the light grazes
-   it. Nothing here paints a colour; the letters exist purely as relief. */
-float markH(vec2 p) {
-  if (uMarkAmt < 0.002) return 0.0;
-  float halfW = 0.46 * (uRes.x / uRes.y);
-  float halfH = halfW * 0.25;              // the mask canvas is 4:1
-  vec2 uv = (p - vec2(0.0, 0.04)) / (2.0 * vec2(halfW, halfH)) + 0.5;
-  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 0.0;
-  return texture2D(uMark, vec2(uv.x, 1.0 - uv.y)).r * uMarkAmt;
-}
-
 /* The carved surface. Warped so the ridges flow instead of running straight. */
 float field(vec2 p) {
   float t = uTime * 0.006;
@@ -124,8 +108,7 @@ float field(vec2 p) {
     noise(p * 0.85 + vec2(uWarp, t)),
     noise(p * 0.85 + vec2(t * 0.8, uWarp + 5.2))
   );
-  return ridged(p * 1.02 + (w - 0.5) * 1.15 + vec2(uWarp, 0.0))
-       + markH(p) * 0.9;
+  return ridged(p * 1.02 + (w - 0.5) * 1.15 + vec2(uWarp, 0.0));
 }
 
 void main() {
@@ -235,67 +218,8 @@ export function createScene(container) {
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
   const u = {};
-  for (const name of [
-    "uRes", "uTime", "uPointer", "uColor", "uWarp", "uDepth", "uPaper",
-    "uMark", "uMarkAmt",
-  ]) {
+  for (const name of ["uRes", "uTime", "uPointer", "uColor", "uWarp", "uDepth", "uPaper"]) {
     u[name] = gl.getUniformLocation(program, name);
-  }
-
-  /* ---- The embossed word -------------------------------------------------
-     A 2D canvas draws the chapter's name, blurred hard, and that bitmap is
-     uploaded as a height mask. Blurring here rather than in the shader is
-     what makes the letters read as pressed INTO paper instead of stamped on
-     top of it — and it costs one upload per chapter, not one per frame. */
-  const MARK_W = 1024;
-  const MARK_H = 256;
-  const markCanvas = document.createElement("canvas");
-  markCanvas.width = MARK_W;
-  markCanvas.height = MARK_H;
-  const mctx = markCanvas.getContext("2d");
-  const markTex = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, markTex);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.uniform1i(u.uMark, 0);
-
-  function uploadMark(text) {
-    mctx.clearRect(0, 0, MARK_W, MARK_H);
-    if (text) {
-      mctx.save();
-      mctx.filter = "blur(7px)";
-      mctx.fillStyle = "#fff";
-      mctx.textAlign = "center";
-      mctx.textBaseline = "middle";
-      let size = 200;
-      const face = (s) => '300 ' + s + 'px "Newsreader", Georgia, serif';
-      mctx.font = face(size);
-      while (size > 48 && mctx.measureText(text).width > MARK_W * 0.88) {
-        size -= 8;
-        mctx.font = face(size);
-      }
-      mctx.fillText(text, MARK_W / 2, MARK_H / 2);
-      mctx.restore();
-    }
-    gl.bindTexture(gl.TEXTURE_2D, markTex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, markCanvas);
-  }
-  uploadMark("");
-
-  let markText = "";
-  let markPending = null;
-  let markAmt = 0;
-  let markTarget = 0;
-
-  /* Re-draw once the display face is actually available; a mark rendered in
-     the fallback serif would change shape when Newsreader arrives. */
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => {
-      if (markText) uploadMark(markText);
-    });
   }
 
   /* Read the paper colour from the design tokens so the shader can never
@@ -446,23 +370,11 @@ export function createScene(container) {
     cur.cg = lerp(cur.cg, tCol1, s);
     cur.cb = lerp(cur.cb, tCol2, s);
 
-    /* The word fades out fully before the next one is uploaded, so the two
-       never cross-dissolve into an unreadable smear. */
-    if (markPending !== null && markAmt < 0.02) {
-      markText = markPending;
-      markPending = null;
-      uploadMark(markText);
-      markTarget = markText ? 1 : 0;
-    }
-    const ms = 1 - Math.pow(0.12, Math.min(dt, 0.05));
-    markAmt = lerp(markAmt, markTarget, ms);
-
     gl.uniform1f(u.uTime, time);
     gl.uniform2f(u.uPointer, pointer.x, pointer.y);
     gl.uniform3f(u.uColor, cur.cr, cur.cg, cur.cb);
     gl.uniform1f(u.uWarp, cur.warp);
     gl.uniform1f(u.uDepth, cur.depth);
-    gl.uniform1f(u.uMarkAmt, markAmt);
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
@@ -493,16 +405,6 @@ export function createScene(container) {
     /* Homepage sector-hover preview; pass a chapter name or null to release. */
     setHover(name) {
       hoverKey = name && Object.prototype.hasOwnProperty.call(CHAPTERS, name) ? name : null;
-    },
-
-    /* Press a word into the paper, or pass "" to release it. The letters are
-       relief only — they carry no colour of their own and appear as the lamp
-       grazes them. */
-    setMark(text) {
-      const next = (text || "").toUpperCase();
-      if (next === (markPending !== null ? markPending : markText)) return;
-      markPending = next;
-      markTarget = 0; // fade the current word out first
     },
 
     update,
