@@ -1,9 +1,9 @@
 /* ==========================================================================
    MRD Group — architectural viewer (construction page)
    --------------------------------------------------------------------------
-   A six-storey residential block, modelled procedurally in Blender by
-   `building.py`: concrete frame, glazed facades, balconies with railings,
-   parapet and entrance canopy. Each storey exports as its own named object
+   A nine-storey residential block, modelled procedurally in Blender by
+   `building.py`: a wide podium, a main shaft, a cantilevered bay, a crown that
+   steps back, glazed facades and a roofscape. Each storey is its own object
    (Floor_0 … Floor_8), which is what lets this file raise them one at a time
    as the reader scrolls — the building assembles itself, bottom to top.
 
@@ -87,7 +87,7 @@ export async function createBuilding(canvas, opts = {}) {
     if (!child.name.startsWith(FLOOR_PREFIX)) return;
     const idx = parseInt(child.name.slice(FLOOR_PREFIX.length), 10);
     /* Every storey needs its OWN material instances. Blender exports one
-       shared concrete/glass material across all six, so fading storey 5 was
+       shared concrete/glass material across every storey, so fading storey 5 was
        fading the entire building — which is why nothing appeared until the
        scroll was nearly finished. */
     child.traverse((o) => {
