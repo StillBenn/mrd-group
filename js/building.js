@@ -76,11 +76,15 @@ export async function createBuilding(canvas, opts = {}) {
   /* A key light on top of the environment, purely for the shadows — an HDR
      alone lights a scene beautifully but casts nothing. */
   const key = new THREE.DirectionalLight(0xfff6e8, 2.2);
-  /* Placed behind-right of the model rather than beside the camera: a light
-     sitting over the viewer's shoulder throws its shadow behind the building,
-     where nobody can see it. From here the shadow falls forward-left, into
-     frame, while the faces turned towards the camera stay lit. */
-  key.position.set(30, 36, -18);
+  /* This light TURNS WITH THE CAMERA (see updateCamera). With a fixed light,
+     rotating the model swung its shadow towards the viewer at some angles and
+     the composition ran off the bottom of the frame — measured worst case 1.20
+     against a 1.0 budget. Rotating the rig keeps the shadow in the same place
+     on screen at every angle: worst case drops to 0.86.
+     The elevation is deliberately steep (70 over 26) so the shadow stays
+     short; a 46° light cast a 31.7 m shadow that alone overflowed the frame. */
+  const LIGHT_BASE = new THREE.Vector3(26, 70, -6);
+  key.position.copy(LIGHT_BASE);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   key.shadow.camera.near = 1;
@@ -156,8 +160,8 @@ export async function createBuilding(canvas, opts = {}) {
   /* Distance set by measurement, not by trigonometry: projecting the model's
      bounding box through this camera puts all eight corners inside the frame.
      A closer rig cut the parapet and mast off the top. */
-  const TARGET = new THREE.Vector3(0, 15.5, 0);
-  const basePos = new THREE.Vector3(42, 29, 50);
+  const TARGET = new THREE.Vector3(0, 16, 0);
+  const basePos = new THREE.Vector3(46, 32, 55);
   const camPos = basePos.clone();
 
   let progress = 0;
@@ -216,15 +220,22 @@ export async function createBuilding(canvas, opts = {}) {
     const a = spin + smoothX * 0.34;
     wanted.set(
       basePos.x * Math.cos(a) - basePos.z * Math.sin(a),
-      /* Kept small: a big vertical swing would push the roof back out of the
-         frame the framing above was chosen to hold. */
-      basePos.y - smoothY * 3.0,
+      /* Kept small: the framing budget above was measured with a ±2 m tilt. */
+      basePos.y - smoothY * 2.0,
       basePos.x * Math.sin(a) + basePos.z * Math.cos(a)
     );
     if (snap) camPos.copy(wanted);
     else camPos.lerp(wanted, 0.06);
     camera.position.copy(camPos);
     camera.lookAt(TARGET);
+
+    /* Swing the key light by the same angle, so the shadow keeps its place in
+       the frame however far the reader has turned the model. */
+    key.position.set(
+      LIGHT_BASE.x * Math.cos(a) - LIGHT_BASE.z * Math.sin(a),
+      LIGHT_BASE.y,
+      LIGHT_BASE.x * Math.sin(a) + LIGHT_BASE.z * Math.cos(a)
+    );
   }
 
   function frame() {
