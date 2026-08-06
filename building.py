@@ -279,7 +279,21 @@ def build_building(out):
     bpy.ops.object.join()
     bpy.context.active_object.name = "Floor_%d" % (FLOORS - 1)
 
-    box("Ground", (0, 0, -0.18), (W * 1.85, D * 2.0, 0.36), m_stone, 0.03)
+    # A round plinth, not a rectangular slab. A rectangle's corner has to end
+    # somewhere, and wherever the canvas cuts it the model looks broken; a disc
+    # has no corner to break, and it reads as a presentation base.
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=72, radius=max(W, D) * 1.02, depth=0.42,
+        location=(0, 0, -0.21)
+    )
+    ground = bpy.context.active_object
+    ground.name = "Ground"
+    ground.data.materials.append(m_stone)
+    bev = ground.modifiers.new("Bevel", 'BEVEL')
+    bev.width = 0.05
+    bev.segments = 2
+    bev.limit_method = 'ANGLE'
+    bev.angle_limit = math.radians(40)
 
     export(out)
     tris = sum(len(o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')
