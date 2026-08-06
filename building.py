@@ -20,14 +20,20 @@ import math
 import sys
 
 # ---- dimensions (metres — real scale keeps proportions believable) ---------
-W, D = 13.0, 10.0        # building footprint
+# Sections are deliberately heavy. Thin slabs and slender columns read as a
+# paper model; a building looks BUILT when the structure has visible mass and
+# the facade casts its own shadows.
+W, D = 14.0, 10.6        # building footprint
 FLOORS = 6
-FH = 3.1                 # storey height
-SLAB = 0.28
-COL = 0.42
-PARAPET = 1.0
-BALC = 1.6               # balcony depth
-RAIL_H = 1.05
+FH = 3.2                 # storey height
+SLAB = 0.42              # deep floor bands — the strongest horizontal line
+COL = 0.58               # columns you could not bend
+OVERHANG = 0.62          # how far each slab projects past the facade
+PARAPET = 1.25
+BALC = 1.9               # balcony depth
+RAIL_H = 1.12
+FIN = 0.34               # depth of the vertical facade fins
+N_FINS = 9               # fins per long facade
 
 
 
@@ -96,11 +102,12 @@ def export(path):
 def build_building(out):
     reset()
 
-    m_concrete = mat("Concrete", (0.815, 0.803, 0.783, 1.0), 0.86)
-    m_stone = mat("Stone", (0.735, 0.720, 0.700, 1.0), 0.90)
-    m_glass = mat("Glass", (0.62, 0.71, 0.74, 1.0), 0.06, 0.0, 0.92, 1.5)
-    m_metal = mat("Metal", (0.60, 0.60, 0.605, 1.0), 0.34, 1.0)
-    m_frame = mat("Mullion", (0.30, 0.30, 0.31, 1.0), 0.42, 0.85)
+    # Warmer, slightly deeper concrete: pure light grey photographs as plastic.
+    m_concrete = mat("Concrete", (0.775, 0.760, 0.735, 1.0), 0.82)
+    m_stone = mat("Stone", (0.690, 0.672, 0.646, 1.0), 0.88)
+    m_glass = mat("Glass", (0.42, 0.53, 0.58, 1.0), 0.03, 0.0, 0.90, 1.52)
+    m_metal = mat("Metal", (0.56, 0.56, 0.565, 1.0), 0.26, 1.0)
+    m_frame = mat("Mullion", (0.22, 0.22, 0.235, 1.0), 0.38, 0.9)
 
     xs = [-W / 2 + COL / 2, -W / 6, W / 6, W / 2 - COL / 2]
     ys = [-D / 2 + COL / 2, 0.0, D / 2 - COL / 2]
@@ -109,9 +116,14 @@ def build_building(out):
         z = f * FH
         parts = []
 
-        # slab, slightly overhanging so it casts a shadow line on the facade
+        # Floor band. It projects well past the glass, so every storey draws a
+        # deep shadow across the facade below it — that banding is what gives
+        # the block its weight.
         parts.append(box("slab", (0, 0, z + SLAB / 2),
-                         (W + 0.34, D + 0.34, SLAB), m_concrete, 0.02))
+                         (W + OVERHANG, D + OVERHANG, SLAB), m_concrete, 0.03))
+        parts.append(box("slabtrim", (0, 0, z + SLAB - 0.04),
+                         (W + OVERHANG + 0.06, D + OVERHANG + 0.06, 0.09),
+                         m_stone, 0.02))
 
         if f < FLOORS - 1:
             top = FH - SLAB
@@ -123,40 +135,64 @@ def build_building(out):
 
             # glazed facades on the long sides, divided by mullions
             for sy in (-1, 1):
-                y = sy * (D / 2 - 0.08)
+                y = sy * (D / 2 - 0.10)
                 parts.append(box("glz", (0, y, z + SLAB + top / 2),
-                                 (W - 1.2, 0.06, top - 0.30), m_glass, 0.0))
+                                 (W - 1.4, 0.07, top - 0.22), m_glass, 0.0))
                 for gx in (-W / 3, 0.0, W / 3):
                     parts.append(box("mul", (gx, y, z + SLAB + top / 2),
-                                     (0.10, 0.12, top - 0.30), m_frame, 0.01))
-                parts.append(box("sill", (0, y, z + SLAB + 0.08),
-                                 (W - 1.0, 0.20, 0.16), m_stone, 0.02))
+                                     (0.13, 0.14, top - 0.22), m_frame, 0.01))
 
-            # balcony + railing on the front of every storey above the ground
+                # Vertical fins standing proud of the glass. This is the
+                # "embossed" quality: nine slim blades per facade, each
+                # throwing a moving shadow as the sun crosses them.
+                for i in range(N_FINS):
+                    fx = -W / 2 + (i + 0.5) * (W / N_FINS)
+                    parts.append(box("fin", (fx, y + sy * FIN / 2,
+                                             z + SLAB + top / 2),
+                                     (0.16, FIN, top - 0.10), m_concrete, 0.015))
+
+            # Short facades: glazed too, with a solid pier at each end. Left
+            # open they read as a half-built shell rather than a finished block.
+            for sx in (-1, 1):
+                x = sx * (W / 2 - 0.10)
+                parts.append(box("sglz", (x, 0, z + SLAB + top / 2),
+                                 (0.07, D - 1.6, top - 0.22), m_glass, 0.0))
+                for gy in (-D / 4, D / 4):
+                    parts.append(box("smul", (x, gy, z + SLAB + top / 2),
+                                     (0.14, 0.13, top - 0.22), m_frame, 0.01))
+                for py in (-1, 1):
+                    parts.append(box("pier", (x - sx * 0.10, py * (D / 2 - 0.55),
+                                              z + SLAB + top / 2),
+                                     (0.30, 0.75, top), m_concrete, 0.02))
+
+            # Balconies with a glass balustrade — a metal picket fence reads as
+            # cheap housing; frameless glass reads as a considered building.
             if f > 0:
                 by = -(D / 2 + BALC / 2)
                 parts.append(box("balc", (0, by, z + SLAB / 2),
-                                 (W * 0.52, BALC, SLAB * 0.8), m_concrete, 0.02))
-                rz = z + SLAB + RAIL_H / 2
-                parts.append(box("rtop", (0, by - BALC / 2, z + SLAB + RAIL_H),
-                                 (W * 0.52, 0.07, 0.07), m_metal, 0.01))
-                n_bal = 15
-                for i in range(n_bal):
-                    bx = -W * 0.26 + (i / (n_bal - 1.0)) * (W * 0.52)
-                    parts.append(box("bal", (bx, by - BALC / 2, rz),
-                                     (0.035, 0.035, RAIL_H), m_metal, 0.0))
+                                 (W * 0.58, BALC, SLAB * 0.92), m_concrete, 0.03))
+                gz = z + SLAB + RAIL_H / 2
+                parts.append(box("bglass", (0, by - BALC / 2 + 0.05, gz),
+                                 (W * 0.58, 0.04, RAIL_H), m_glass, 0.0))
+                parts.append(box("rtop", (0, by - BALC / 2 + 0.05,
+                                          z + SLAB + RAIL_H),
+                                 (W * 0.58 + 0.06, 0.10, 0.09), m_metal, 0.02))
                 for sx in (-1, 1):
-                    parts.append(box("rside", (sx * W * 0.26, by, rz),
-                                     (0.05, BALC, 0.05), m_metal, 0.01))
+                    parts.append(box("bside", (sx * W * 0.29, by, gz),
+                                     (0.05, BALC, RAIL_H), m_glass, 0.0))
 
             # ground floor reads as an entrance
             if f == 0:
-                parts.append(box("door", (0, -(D / 2 + 0.05),
+                parts.append(box("door", (0, -(D / 2 + 0.06),
                                           z + SLAB + (top - 0.3) / 2),
-                                 (3.2, 0.12, top - 0.3), m_glass, 0.0))
-                parts.append(box("canopy", (0, -(D / 2 + 1.1),
-                                            z + SLAB + top - 0.15),
-                                 (5.0, 2.2, 0.18), m_concrete, 0.02))
+                                 (3.6, 0.14, top - 0.3), m_glass, 0.0))
+                parts.append(box("canopy", (0, -(D / 2 + 1.35),
+                                            z + SLAB + top - 0.18),
+                                 (6.2, 2.7, 0.30), m_concrete, 0.03))
+                for sx in (-1, 1):
+                    parts.append(box("portal", (sx * 2.15, -(D / 2 + 0.35),
+                                                z + SLAB + top / 2),
+                                     (0.5, 0.9, top), m_stone, 0.02))
 
         join(parts, "Floor_%d" % f)
         bpy.context.scene.cursor.location = (0, 0, z)
@@ -167,11 +203,16 @@ def build_building(out):
     # roof parapet joins the top storey
     top_z = (FLOORS - 1) * FH + SLAB
     rims = []
-    for sx, sy, w, d in ((0, 1, W + 0.3, 0.24), (0, -1, W + 0.3, 0.24),
-                         (1, 0, 0.24, D + 0.3), (-1, 0, 0.24, D + 0.3)):
-        rims.append(box("rim", (sx * (W / 2 + 0.15), sy * (D / 2 + 0.15),
+    ph = OVERHANG / 2
+    for sx, sy, w, d in ((0, 1, W + OVERHANG, 0.36), (0, -1, W + OVERHANG, 0.36),
+                         (1, 0, 0.36, D + OVERHANG), (-1, 0, 0.36, D + OVERHANG)):
+        rims.append(box("rim", (sx * (W / 2 + ph - 0.06), sy * (D / 2 + ph - 0.06),
                                 top_z + PARAPET / 2), (w, d, PARAPET),
-                        m_concrete, 0.02))
+                        m_concrete, 0.03))
+    # a capping band, the detail that stops a roof looking like a cut-off box
+    rims.append(box("cap", (0, 0, top_z + PARAPET),
+                    (W + OVERHANG + 0.14, D + OVERHANG + 0.14, 0.14),
+                    m_stone, 0.02))
     parapet = join(rims, "Parapet")
     last = bpy.data.objects["Floor_%d" % (FLOORS - 1)]
     bpy.ops.object.select_all(action='DESELECT')

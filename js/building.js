@@ -115,8 +115,10 @@ export async function createBuilding(canvas, opts = {}) {
   scene.add(building);
 
   /* ---- camera ----------------------------------------------------------- */
-  const TARGET = new THREE.Vector3(0, 9.5, 0);
-  const basePos = new THREE.Vector3(34, 24, 40);
+  /* Framed close so the block fills the canvas — a small model floating in a
+     large empty frame is what made it look like a toy. */
+  const TARGET = new THREE.Vector3(0, 10.5, 0);
+  const basePos = new THREE.Vector3(24, 17, 28);
   const camPos = basePos.clone();
 
   let progress = 0;
@@ -163,11 +165,13 @@ export async function createBuilding(canvas, opts = {}) {
     smoothX += (pointerX - smoothX) * 0.06;
     smoothY += (pointerY - smoothY) * 0.06;
 
-    /* The pointer orbits the model a few degrees; it never takes the camera. */
-    const a = smoothX * 0.18;
+    /* The pointer orbits the model. Wide enough to feel like you are turning
+       the object in your hands (~40° each way), still bounded so the reader
+       can never lose the building. */
+    const a = smoothX * 0.72;
     const px = basePos.x * Math.cos(a) - basePos.z * Math.sin(a);
     const pz = basePos.x * Math.sin(a) + basePos.z * Math.cos(a);
-    camPos.lerp(new THREE.Vector3(px, basePos.y - smoothY * 3.0, pz), 0.06);
+    camPos.lerp(new THREE.Vector3(px, basePos.y - smoothY * 6.5, pz), 0.06);
     camera.position.copy(camPos);
     camera.lookAt(TARGET);
 
