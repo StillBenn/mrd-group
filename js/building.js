@@ -4,7 +4,7 @@
    A six-storey residential block, modelled procedurally in Blender by
    `building.py`: concrete frame, glazed facades, balconies with railings,
    parapet and entrance canopy. Each storey exports as its own named object
-   (Floor_0 … Floor_5), which is what lets this file raise them one at a time
+   (Floor_0 … Floor_8), which is what lets this file raise them one at a time
    as the reader scrolls — the building assembles itself, bottom to top.
 
    The lesson this file is built around: an architectural model without
@@ -117,13 +117,21 @@ export async function createBuilding(canvas, opts = {}) {
   /* ---- camera ----------------------------------------------------------- */
   /* Framed close so the block fills the canvas — a small model floating in a
      large empty frame is what made it look like a toy. */
-  const TARGET = new THREE.Vector3(0, 10.5, 0);
-  const basePos = new THREE.Vector3(24, 17, 28);
+  const TARGET = new THREE.Vector3(0, 14.5, 0);
+  const basePos = new THREE.Vector3(27, 21, 32);
   const camPos = basePos.clone();
 
   let progress = 0;
   let pointerX = 0, pointerY = 0, smoothX = 0, smoothY = 0;
   let running = false, raf = 0, width = 0, height = 0;
+
+  /* Drag-to-turn. `spin` is the angle the reader has dialled in by dragging and
+     it persists; hover parallax is added on top of it, at a fraction of the
+     weight, so the two never fight for control. */
+  let spin = 0;
+  let spinTarget = 0;
+  let dragging = false;
+  let lastDragX = 0;
 
   function resize() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -159,22 +167,31 @@ export async function createBuilding(canvas, opts = {}) {
     renderer.render(scene, camera);
   }
 
+  const wanted = new THREE.Vector3();
+
+  /* Camera placement lives here rather than inside the loop, because dragging
+     must move the camera even while the loop is idle (off-screen, or a browser
+     that has throttled rAF). `snap` skips the easing for that case. */
+  function updateCamera(snap) {
+    spin += (spinTarget - spin) * (snap ? 1 : 0.16);
+    const a = spin + smoothX * 0.34;
+    wanted.set(
+      basePos.x * Math.cos(a) - basePos.z * Math.sin(a),
+      basePos.y - smoothY * 6.5,
+      basePos.x * Math.sin(a) + basePos.z * Math.cos(a)
+    );
+    if (snap) camPos.copy(wanted);
+    else camPos.lerp(wanted, 0.06);
+    camera.position.copy(camPos);
+    camera.lookAt(TARGET);
+  }
+
   function frame() {
     raf = 0;
     if (!running) return;
     smoothX += (pointerX - smoothX) * 0.06;
     smoothY += (pointerY - smoothY) * 0.06;
-
-    /* The pointer orbits the model. Wide enough to feel like you are turning
-       the object in your hands (~40° each way), still bounded so the reader
-       can never lose the building. */
-    const a = smoothX * 0.72;
-    const px = basePos.x * Math.cos(a) - basePos.z * Math.sin(a);
-    const pz = basePos.x * Math.sin(a) + basePos.z * Math.cos(a);
-    camPos.lerp(new THREE.Vector3(px, basePos.y - smoothY * 6.5, pz), 0.06);
-    camera.position.copy(camPos);
-    camera.lookAt(TARGET);
-
+    updateCamera(false);
     draw();
     raf = requestAnimationFrame(frame);
   }
@@ -197,6 +214,27 @@ export async function createBuilding(canvas, opts = {}) {
     setPointer(x, y) {
       pointerX = x;
       pointerY = y;
+    },
+
+    /* Left-button drag turns the building, like a model on a turntable. */
+    beginDrag(clientX) {
+      dragging = true;
+      lastDragX = clientX;
+    },
+    moveDrag(clientX) {
+      if (!dragging) return;
+      spinTarget += (clientX - lastDragX) * 0.009;
+      lastDragX = clientX;
+      if (!running) {
+        updateCamera(true);
+        draw();
+      }
+    },
+    endDrag() {
+      dragging = false;
+    },
+    isDragging() {
+      return dragging;
     },
 
     start() {

@@ -1,8 +1,8 @@
 """
 MRD Group — procedural architecture for the construction page.
 
-Produces `building.glb`: a six-storey residential block — concrete frame,
-glazed facades, balconies with metal railings, parapet and entrance canopy.
+Produces `building.glb`: a nine-storey residential block — podium, main shaft,
+cantilevered bay, stepped-back crown, glazed facades and roofscape.
 
 Why it is modelled this way: a first attempt shipped bare slabs on columns and
 read as grey cardboard. Perceived quality in architectural 3D comes from
@@ -10,7 +10,7 @@ MATERIAL and LIGHT, not polygon count — so every surface carries a real PBR
 material, edges are bevelled (a razor-sharp edge never looks built), and the
 web layer lights both models with an HDR environment.
 
-Each storey is exported as its own named object (Floor_0 … Floor_5) so the web
+Each storey is exported as its own named object (Floor_0 … Floor_8) so the web
 layer can raise them one at a time and hit-test them.
 
 Run:  blender --background --python building.py -- <output_dir>
@@ -23,17 +23,32 @@ import sys
 # Sections are deliberately heavy. Thin slabs and slender columns read as a
 # paper model; a building looks BUILT when the structure has visible mass and
 # the facade casts its own shadows.
-W, D = 14.0, 10.6        # building footprint
-FLOORS = 6
-FH = 3.2                 # storey height
-SLAB = 0.42              # deep floor bands — the strongest horizontal line
-COL = 0.58               # columns you could not bend
-OVERHANG = 0.62          # how far each slab projects past the facade
-PARAPET = 1.25
-BALC = 1.9               # balcony depth
+W, D = 15.0, 11.0        # nominal footprint of the main body
+FLOORS = 9               # tall enough to read as a building, not a house
+FH = 3.25                # storey height
+SLAB = 0.46              # deep floor bands — the strongest horizontal line
+COL = 0.62               # columns you could not bend
+OVERHANG = 0.70          # how far each slab projects past the facade
+PARAPET = 1.35
+BALC = 2.1               # balcony depth
 RAIL_H = 1.12
-FIN = 0.34               # depth of the vertical facade fins
-N_FINS = 9               # fins per long facade
+FIN = 0.40               # depth of the vertical facade fins
+N_FINS = 10              # fins per long facade
+
+# Massing. A single extruded rectangle always looks timid; the block is
+# composed instead — a wide podium at street level, a main shaft, a
+# cantilevered bay pushing out of the middle, and a crown that steps back.
+PODIUM_TOP = 1            # storeys 0–1 are the podium
+CROWN_FROM = 7            # storeys 7+ step back
+BAY_FROM, BAY_TO = 3, 5   # the cantilever
+
+
+def footprint(f):
+    if f <= PODIUM_TOP:
+        return W * 1.26, D * 1.16
+    if f >= CROWN_FROM:
+        return W * 0.68, D * 0.82
+    return W, D
 
 
 
@@ -109,24 +124,36 @@ def build_building(out):
     m_metal = mat("Metal", (0.56, 0.56, 0.565, 1.0), 0.26, 1.0)
     m_frame = mat("Mullion", (0.22, 0.22, 0.235, 1.0), 0.38, 0.9)
 
-    xs = [-W / 2 + COL / 2, -W / 6, W / 6, W / 2 - COL / 2]
-    ys = [-D / 2 + COL / 2, 0.0, D / 2 - COL / 2]
-
     for f in range(FLOORS):
         z = f * FH
+        w, d = footprint(f)
         parts = []
 
         # Floor band. It projects well past the glass, so every storey draws a
         # deep shadow across the facade below it — that banding is what gives
         # the block its weight.
         parts.append(box("slab", (0, 0, z + SLAB / 2),
-                         (W + OVERHANG, D + OVERHANG, SLAB), m_concrete, 0.03))
+                         (w + OVERHANG, d + OVERHANG, SLAB), m_concrete, 0.03))
         parts.append(box("slabtrim", (0, 0, z + SLAB - 0.04),
-                         (W + OVERHANG + 0.06, D + OVERHANG + 0.06, 0.09),
+                         (w + OVERHANG + 0.06, d + OVERHANG + 0.06, 0.09),
                          m_stone, 0.02))
+
+        # Where the mass steps back, the roof of the storey below becomes a
+        # terrace — the balustrade is what tells you it is occupied.
+        if f in (PODIUM_TOP + 1, CROWN_FROM):
+            pw, pd = footprint(f - 1)
+            for sy in (-1, 1):
+                parts.append(box("tglass", (0, sy * (pd / 2 + OVERHANG / 2 - 0.12),
+                                            z + SLAB + 0.55),
+                                 (pw * 0.92, 0.04, 1.10), m_glass, 0.0))
+                parts.append(box("trail", (0, sy * (pd / 2 + OVERHANG / 2 - 0.12),
+                                           z + SLAB + 1.10),
+                                 (pw * 0.92 + 0.06, 0.09, 0.08), m_metal, 0.02))
 
         if f < FLOORS - 1:
             top = FH - SLAB
+            xs = [-w / 2 + COL / 2, -w / 6, w / 6, w / 2 - COL / 2]
+            ys = [-d / 2 + COL / 2, 0.0, d / 2 - COL / 2]
 
             for x in xs:
                 for y in ys:
@@ -135,64 +162,85 @@ def build_building(out):
 
             # glazed facades on the long sides, divided by mullions
             for sy in (-1, 1):
-                y = sy * (D / 2 - 0.10)
+                y = sy * (d / 2 - 0.10)
                 parts.append(box("glz", (0, y, z + SLAB + top / 2),
-                                 (W - 1.4, 0.07, top - 0.22), m_glass, 0.0))
-                for gx in (-W / 3, 0.0, W / 3):
+                                 (w - 1.4, 0.07, top - 0.22), m_glass, 0.0))
+                for gx in (-w / 3, 0.0, w / 3):
                     parts.append(box("mul", (gx, y, z + SLAB + top / 2),
                                      (0.13, 0.14, top - 0.22), m_frame, 0.01))
 
                 # Vertical fins standing proud of the glass. This is the
-                # "embossed" quality: nine slim blades per facade, each
-                # throwing a moving shadow as the sun crosses them.
+                # "embossed" quality: slim blades throwing moving shadows.
                 for i in range(N_FINS):
-                    fx = -W / 2 + (i + 0.5) * (W / N_FINS)
+                    fx = -w / 2 + (i + 0.5) * (w / N_FINS)
                     parts.append(box("fin", (fx, y + sy * FIN / 2,
                                              z + SLAB + top / 2),
-                                     (0.16, FIN, top - 0.10), m_concrete, 0.015))
+                                     (0.17, FIN, top - 0.10), m_concrete, 0.015))
 
-            # Short facades: glazed too, with a solid pier at each end. Left
-            # open they read as a half-built shell rather than a finished block.
+            # Short facades: glazed too, with a solid pier at each end.
             for sx in (-1, 1):
-                x = sx * (W / 2 - 0.10)
+                x = sx * (w / 2 - 0.10)
                 parts.append(box("sglz", (x, 0, z + SLAB + top / 2),
-                                 (0.07, D - 1.6, top - 0.22), m_glass, 0.0))
-                for gy in (-D / 4, D / 4):
+                                 (0.07, d - 1.6, top - 0.22), m_glass, 0.0))
+                for gy in (-d / 4, d / 4):
                     parts.append(box("smul", (x, gy, z + SLAB + top / 2),
                                      (0.14, 0.13, top - 0.22), m_frame, 0.01))
                 for py in (-1, 1):
-                    parts.append(box("pier", (x - sx * 0.10, py * (D / 2 - 0.55),
+                    parts.append(box("pier", (x - sx * 0.10, py * (d / 2 - 0.55),
                                               z + SLAB + top / 2),
-                                     (0.30, 0.75, top), m_concrete, 0.02))
+                                     (0.32, 0.80, top), m_concrete, 0.02))
 
-            # Balconies with a glass balustrade — a metal picket fence reads as
-            # cheap housing; frameless glass reads as a considered building.
-            if f > 0:
-                by = -(D / 2 + BALC / 2)
+            # The cantilever: a glazed bay pushed out of the middle of the
+            # shaft, hanging over the podium. This is the move that stops the
+            # block reading as one timid extrusion.
+            if BAY_FROM <= f <= BAY_TO:
+                byd = 2.3
+                by = -(d / 2 + byd / 2)
+                parts.append(box("bayslab", (0, by, z + SLAB / 2),
+                                 (w * 0.46, byd, SLAB), m_concrete, 0.03))
+                parts.append(box("bayglz", (0, by - byd / 2 + 0.06,
+                                            z + SLAB + top / 2),
+                                 (w * 0.46, 0.07, top - 0.20), m_glass, 0.0))
+                for bx in (-w * 0.155, w * 0.155):
+                    parts.append(box("baymul", (bx, by - byd / 2 + 0.06,
+                                                z + SLAB + top / 2),
+                                     (0.14, 0.14, top - 0.20), m_frame, 0.01))
+                for sx in (-1, 1):
+                    parts.append(box("bayside", (sx * w * 0.23, by,
+                                                 z + SLAB + top / 2),
+                                     (0.30, byd, top), m_concrete, 0.02))
+                parts.append(box("baytop", (0, by, z + FH - 0.10),
+                                 (w * 0.46 + 0.12, byd + 0.12, 0.22),
+                                 m_concrete, 0.03))
+
+            # Balconies with a glass balustrade, on the storeys the bay does
+            # not occupy.
+            elif f > PODIUM_TOP:
+                by = -(d / 2 + BALC / 2)
                 parts.append(box("balc", (0, by, z + SLAB / 2),
-                                 (W * 0.58, BALC, SLAB * 0.92), m_concrete, 0.03))
+                                 (w * 0.60, BALC, SLAB * 0.92), m_concrete, 0.03))
                 gz = z + SLAB + RAIL_H / 2
                 parts.append(box("bglass", (0, by - BALC / 2 + 0.05, gz),
-                                 (W * 0.58, 0.04, RAIL_H), m_glass, 0.0))
+                                 (w * 0.60, 0.04, RAIL_H), m_glass, 0.0))
                 parts.append(box("rtop", (0, by - BALC / 2 + 0.05,
                                           z + SLAB + RAIL_H),
-                                 (W * 0.58 + 0.06, 0.10, 0.09), m_metal, 0.02))
+                                 (w * 0.60 + 0.06, 0.10, 0.09), m_metal, 0.02))
                 for sx in (-1, 1):
-                    parts.append(box("bside", (sx * W * 0.29, by, gz),
+                    parts.append(box("bside", (sx * w * 0.30, by, gz),
                                      (0.05, BALC, RAIL_H), m_glass, 0.0))
 
             # ground floor reads as an entrance
             if f == 0:
-                parts.append(box("door", (0, -(D / 2 + 0.06),
+                parts.append(box("door", (0, -(d / 2 + 0.06),
                                           z + SLAB + (top - 0.3) / 2),
-                                 (3.6, 0.14, top - 0.3), m_glass, 0.0))
-                parts.append(box("canopy", (0, -(D / 2 + 1.35),
+                                 (4.0, 0.14, top - 0.3), m_glass, 0.0))
+                parts.append(box("canopy", (0, -(d / 2 + 1.6),
                                             z + SLAB + top - 0.18),
-                                 (6.2, 2.7, 0.30), m_concrete, 0.03))
+                                 (7.0, 3.2, 0.34), m_concrete, 0.03))
                 for sx in (-1, 1):
-                    parts.append(box("portal", (sx * 2.15, -(D / 2 + 0.35),
+                    parts.append(box("portal", (sx * 2.4, -(d / 2 + 0.4),
                                                 z + SLAB + top / 2),
-                                     (0.5, 0.9, top), m_stone, 0.02))
+                                     (0.55, 1.0, top), m_stone, 0.02))
 
         join(parts, "Floor_%d" % f)
         bpy.context.scene.cursor.location = (0, 0, z)
@@ -203,16 +251,25 @@ def build_building(out):
     # roof parapet joins the top storey
     top_z = (FLOORS - 1) * FH + SLAB
     rims = []
+    cw, cd = footprint(FLOORS - 1)
     ph = OVERHANG / 2
-    for sx, sy, w, d in ((0, 1, W + OVERHANG, 0.36), (0, -1, W + OVERHANG, 0.36),
-                         (1, 0, 0.36, D + OVERHANG), (-1, 0, 0.36, D + OVERHANG)):
-        rims.append(box("rim", (sx * (W / 2 + ph - 0.06), sy * (D / 2 + ph - 0.06),
-                                top_z + PARAPET / 2), (w, d, PARAPET),
+    for sx, sy, w_, d_ in ((0, 1, cw + OVERHANG, 0.40), (0, -1, cw + OVERHANG, 0.40),
+                           (1, 0, 0.40, cd + OVERHANG), (-1, 0, 0.40, cd + OVERHANG)):
+        rims.append(box("rim", (sx * (cw / 2 + ph - 0.06), sy * (cd / 2 + ph - 0.06),
+                                top_z + PARAPET / 2), (w_, d_, PARAPET),
                         m_concrete, 0.03))
     # a capping band, the detail that stops a roof looking like a cut-off box
     rims.append(box("cap", (0, 0, top_z + PARAPET),
-                    (W + OVERHANG + 0.14, D + OVERHANG + 0.14, 0.14),
+                    (cw + OVERHANG + 0.16, cd + OVERHANG + 0.16, 0.16),
                     m_stone, 0.02))
+    # rooftop plant room + a slim mast: the silhouette detail every real
+    # building has and every toy model lacks
+    rims.append(box("plant", (cw * 0.18, 0, top_z + PARAPET + 0.9),
+                   (cw * 0.42, cd * 0.5, 1.8), m_concrete, 0.03))
+    rims.append(box("mast", (-cw * 0.3, 0, top_z + PARAPET + 2.4),
+                   (0.16, 0.16, 4.8), m_metal, 0.0))
+
+    # The roofscape belongs to the top storey, so it rises with it.
     parapet = join(rims, "Parapet")
     last = bpy.data.objects["Floor_%d" % (FLOORS - 1)]
     bpy.ops.object.select_all(action='DESELECT')
@@ -222,7 +279,7 @@ def build_building(out):
     bpy.ops.object.join()
     bpy.context.active_object.name = "Floor_%d" % (FLOORS - 1)
 
-    box("Ground", (0, 0, -0.16), (W * 1.55, D * 1.75, 0.32), m_stone, 0.03)
+    box("Ground", (0, 0, -0.18), (W * 1.85, D * 2.0, 0.36), m_stone, 0.03)
 
     export(out)
     tris = sum(len(o.data.polygons) for o in bpy.data.objects if o.type == 'MESH')

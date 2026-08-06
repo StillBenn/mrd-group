@@ -398,7 +398,7 @@ function initBuildingFrame() {
       },
     });
 
-    /* The pointer orbits the model a few degrees; it never drives a camera. */
+    /* Hover adds a small parallax; it never drives the camera. */
     root.addEventListener(
       "pointermove",
       (e) => {
@@ -410,6 +410,25 @@ function initBuildingFrame() {
       },
       { passive: true }
     );
+
+    /* Hold the left button and drag to turn the building on its turntable.
+       Pointer capture keeps the gesture alive if the cursor leaves the canvas
+       mid-drag, and touch keeps scrolling because only the X axis is claimed. */
+    canvas.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      scene.beginDrag(e.clientX);
+      canvas.classList.add("is-grabbing");
+      if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (scene.isDragging()) scene.moveDrag(e.clientX);
+    });
+    const release = () => {
+      scene.endDrag();
+      canvas.classList.remove("is-grabbing");
+    };
+    canvas.addEventListener("pointerup", release);
+    canvas.addEventListener("pointercancel", release);
 
     window.ScrollTrigger.refresh();
   };

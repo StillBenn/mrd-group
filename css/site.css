@@ -1620,6 +1620,16 @@ body.menu-open .chapter-rail {
   display: block;
   width: 100%;
   height: 100%;
+  cursor: grab;
+  touch-action: pan-y; /* dragging turns the model; the page still scrolls */
+}
+.frame__canvas.is-grabbing {
+  cursor: grabbing;
+}
+/* The site's custom dot replaces the system cursor, so keep it hidden here. */
+body.has-cursor .frame__canvas,
+body.has-cursor .frame__canvas.is-grabbing {
+  cursor: none;
 }
 .frame__copy {
   align-self: center;
