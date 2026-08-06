@@ -16,6 +16,12 @@
 const DPR_CAP = 1.6;
 const FLOOR_PREFIX = "Floor_";
 
+/* Bump this whenever building.py is re-run. GitHub Pages serves assets with a
+   ten-minute cache, and a browser that has already stored the old .glb will
+   keep drawing it long after the new one is live — which looks exactly like
+   "the fix did not work". The query string makes the new model a new URL. */
+const ASSET_VERSION = "3";
+
 export async function createBuilding(canvas, opts = {}) {
   const THREE = await import("./vendor/three/three.module.min.js");
   const { GLTFLoader } = await import("./vendor/three/GLTFLoader.js");
@@ -78,7 +84,12 @@ export async function createBuilding(canvas, opts = {}) {
 
   /* ---- the building ----------------------------------------------------- */
   const gltf = await new Promise((resolve, reject) =>
-    new GLTFLoader().load(opts.model || "./img/building.glb", resolve, undefined, reject)
+    new GLTFLoader().load(
+      opts.model || "./img/building.glb?v=" + ASSET_VERSION,
+      resolve,
+      undefined,
+      reject
+    )
   );
   const building = gltf.scene;
   const floors = [];
