@@ -474,6 +474,27 @@ body.menu-open .menu {
 .section--tight {
   padding-top: var(--s-7);
 }
+.section--contact {
+  padding-top: var(--s-6);
+  padding-bottom: var(--s-6);
+}
+.section--contact .detail-list > div {
+  padding-block: 0.6rem;
+}
+.section--contact .contact-actions {
+  margin-top: var(--s-5);
+}
+/* A wider crop keeps the map readable while costing less height, so the
+   details column and the map end at roughly the same line. */
+.section--contact .map-frame {
+  aspect-ratio: 16 / 10;
+}
+/* One-line credit: OpenStreetMap requires the attribution, nothing more. */
+.map-note {
+  margin-top: var(--s-3);
+  font-size: var(--t-small);
+  color: var(--c-ink-faint);
+}
 
 .section--band {
   background: var(--c-paper-2);
@@ -617,11 +638,11 @@ body.menu-open .menu {
   height: 100%;
   object-fit: cover;
 }
-.reveal-media {
+.reveals-on .reveal-media {
   clip-path: inset(0 0 100% 0);
   transition: clip-path var(--d-reveal) var(--e-in-out);
 }
-.reveal-media img {
+.reveals-on .reveal-media img {
   transform: scale(1.08);
   transition: transform 2s var(--e-out);
 }
@@ -934,6 +955,22 @@ body.has-cursor .map-frame * {
 }
 .page-hero .hero__title {
   font-size: var(--t-h1);
+}
+
+/* Contact page: the details and the map ARE the content, so the title must
+   not eat a whole screen before them. Title, spacing and rows are all sized
+   down so the block reads in one view with the map beside it. */
+.page-hero.hero--compact {
+  min-height: 0;
+  padding-top: calc(var(--header-h) + var(--s-4));
+  padding-bottom: var(--s-4);
+}
+.page-hero.hero--compact .hero__title {
+  font-size: clamp(2rem, 3vw, 2.5rem);
+}
+.hero--compact .breadcrumb,
+.hero--compact .hero__eyebrow {
+  margin-bottom: var(--s-4);
 }
 .breadcrumb {
   margin-bottom: var(--s-6);
@@ -1378,7 +1415,7 @@ body.has-cursor .map-frame * {
 /* --------------------------------------------------------------------------
    15. Reveal system — JS flips a class, CSS owns the animation.
    -------------------------------------------------------------------------- */
-[data-reveal] {
+.reveals-on [data-reveal] {
   opacity: 0;
   transform: translateY(18px);
   transition: opacity var(--d-reveal) var(--e-out),
@@ -1396,7 +1433,7 @@ body.has-cursor .map-frame * {
   overflow: hidden;
   padding-bottom: 0.06em;
 }
-.split-line > span {
+.reveals-on .split-line > span {
   display: block;
   transform: translateY(105%);
   transition: transform var(--d-reveal) var(--e-out);

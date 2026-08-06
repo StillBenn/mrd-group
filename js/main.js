@@ -220,6 +220,27 @@ function initReveals() {
     }
     io.observe(el);
   });
+
+  /* Safety net. These elements are hidden by CSS until the class arrives, so a
+     single missed observer callback hides that content permanently — which is
+     exactly how the sector photographs disappeared. A cheap scroll check
+     reveals anything already on screen that the observer did not catch. */
+  const sweep = () => {
+    let pending = 0;
+    items.forEach((el) => {
+      if (el.classList.contains("is-in")) return;
+      const r = el.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < window.innerHeight * 0.95) {
+        el.classList.add("is-in");
+        io.unobserve(el);
+      } else {
+        pending++;
+      }
+    });
+    if (!pending) window.removeEventListener("scroll", sweep);
+  };
+  window.addEventListener("scroll", sweep, { passive: true });
+  setTimeout(sweep, 1200);
 }
 
 /* --------------------------------------------------------------------------
@@ -999,6 +1020,11 @@ async function initStage() {
    -------------------------------------------------------------------------- */
 (async function boot() {
   document.body.classList.add("is-loading");
+  /* Arms the reveal system. Everything that starts hidden is hidden ONLY while
+     this class is present, so if this script never runs — or dies before the
+     observers are wired — the page still shows all of its content instead of
+     leaving photographs and headings invisible forever. */
+  document.documentElement.classList.add("reveals-on");
   applyConfig();
 
   /* Arm the hero entrance now (sets per-line delays; the hero stays hidden
