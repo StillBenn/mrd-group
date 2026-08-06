@@ -18,16 +18,16 @@ export const SITE = {
 
   /* Real line published on the client's own site (cizreparkavm.com.tr).
      WhatsApp stays a placeholder until a real number is supplied. */
-  phoneDisplay: "444 89 73",
-  phoneHref: "tel:4448973",
+  phoneDisplay: "(0342) 357 04 40",
+  phoneHref: "tel:+903423570440",
 
-  whatsappDisplay: "+90 500 000 00 00",
-  whatsappHref: "https://wa.me/905000000000",
+  whatsappDisplay: "+90 538 334 24 10",
+  whatsappHref: "https://wa.me/905383342410",
 
   emailDisplay: "info@mrdgroup.com.tr",
   emailHref: "mailto:info@mrdgroup.com.tr",
 
-  hours: "Her gün · 10.00 – 22.00",
+  hours: "Her gün · 09.00 – 17.00",
 };
 
 /* Fill every [data-cfg="key"] element and [data-cfg-href="key"] link. */

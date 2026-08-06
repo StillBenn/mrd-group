@@ -469,6 +469,12 @@ body.menu-open .menu {
 /* --------------------------------------------------------------------------
    6. Section furniture
    -------------------------------------------------------------------------- */
+/* Follows a hero directly: the page's first block of real content should not
+   sit a full section-gap below the title. */
+.section--tight {
+  padding-top: var(--s-7);
+}
+
 .section--band {
   background: var(--c-paper-2);
 }
@@ -1041,7 +1047,9 @@ body.has-cursor .map-frame * {
    -------------------------------------------------------------------------- */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  /* 11rem was too narrow for a five-digit figure with a unit ("16.500 m²"):
+     the value ran into the next column. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: var(--s-7) var(--s-8);
   margin-top: var(--s-9);
   padding-top: var(--s-6);
@@ -1050,17 +1058,21 @@ body.has-cursor .map-frame * {
 .stat__value {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   font-family: var(--f-display);
-  font-size: clamp(2.6rem, 5.2vw, 4rem);
+  font-size: clamp(2.4rem, 4.4vw, 3.5rem);
   font-weight: 300;
   line-height: 1;
   letter-spacing: var(--ls-display);
   color: var(--c-ink);
   font-variant-numeric: tabular-nums;
 }
+/* The unit is set smaller than the figure so a long value keeps its column. */
 .stat__suffix {
   color: var(--c-accent);
-  margin-left: 0.05em;
+  margin-left: 0.12em;
+  font-size: 0.5em;
+  letter-spacing: 0;
 }
 .stat__label {
   margin-top: var(--s-3);

@@ -253,7 +253,11 @@ function initHeroIntro() {
    only (needs several chapters); desktop only (hidden by CSS under 1024px).
    -------------------------------------------------------------------------- */
 function initChapterRail(lenis) {
-  const sections = $$("[data-scene]");
+  /* [data-rail] joins the list too. Some sections are real stops for the
+     reader but not chapters of the WebGL ground (the flagship project sits
+     inside the corporate chapter) — without this the rail skipped them and a
+     click on "Market" jumped straight past the project. */
+  const sections = $$("[data-scene], [data-rail]");
   if (sections.length < 4) return; // the multi-chapter homepage story only
   /* The rail is navigation, not decoration, so reduced-motion keeps it — CSS
      drops its transitions. Only a missing IntersectionObserver disables it,
@@ -272,10 +276,13 @@ function initChapterRail(lenis) {
   rail.className = "chapter-rail";
   rail.setAttribute("aria-label", "Bölüm göstergesi");
 
-  const items = sections.map((sec) => {
+  const items = sections.map((sec, i) => {
     const key = sec.dataset.scene;
-    if (!sec.id) sec.id = "bolum-" + key;
-    const label = LABELS[key] || key;
+    if (!sec.id) sec.id = "bolum-" + (key || i);
+    /* data-rail wins: it is the section's own name for the reader, used both
+       for stops that have no chapter and for pages where the chapter key does
+       not describe the content. */
+    const label = sec.dataset.rail || LABELS[key] || key;
     const a = document.createElement("a");
     a.className = "chapter-rail__item";
     a.href = "#" + sec.id;
