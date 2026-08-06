@@ -189,7 +189,10 @@
           belli olur.
         </p>
         <p class="frame__meta">
-          <span class="frame__counter" aria-live="off">Kat 0 / 6</span>
+          <!-- Must match the storey count in building.py (FLOORS); the 3D
+               layer overwrites it once loaded, so a stale number here shows
+               for a moment on every page load. -->
+          <span class="frame__counter" aria-live="off">Kat 0 / 9</span>
           <span class="frame__hint">Kaydırarak yükseltin · sürükleyerek çevirin</span>
         </p>
       </div>

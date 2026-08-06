@@ -382,7 +382,9 @@ function initBuildingFrame() {
     }
     loading = false;
 
-    const floors = scene.floorCount || 6;
+    /* Falls back to the storey count in building.py (FLOORS) — a stale number
+       here would flash before the model reports its real one. */
+    const floors = scene.floorCount || 9;
     window.ScrollTrigger.create({
       trigger: root,
       start: "top top",
