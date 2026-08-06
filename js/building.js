@@ -47,7 +47,10 @@ export async function createBuilding(canvas, opts = {}) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 400);
+  /* 40° at the distance set below shows 37.9 m of height, against a building
+     that reaches 32.8 m at the mast tip. The previous 36° framing only covered
+     28.3 m, which is why the roof was cut off. */
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 400);
 
   /* ---- environment ------------------------------------------------------
      One HDR does the work of a dozen lights: it gives every surface something
@@ -150,8 +153,11 @@ export async function createBuilding(canvas, opts = {}) {
   /* ---- camera ----------------------------------------------------------- */
   /* Framed close so the block fills the canvas — a small model floating in a
      large empty frame is what made it look like a toy. */
-  const TARGET = new THREE.Vector3(0, 14.5, 0);
-  const basePos = new THREE.Vector3(27, 21, 32);
+  /* Distance set by measurement, not by trigonometry: projecting the model's
+     bounding box through this camera puts all eight corners inside the frame.
+     A closer rig cut the parapet and mast off the top. */
+  const TARGET = new THREE.Vector3(0, 15.5, 0);
+  const basePos = new THREE.Vector3(42, 29, 50);
   const camPos = basePos.clone();
 
   let progress = 0;
@@ -210,7 +216,9 @@ export async function createBuilding(canvas, opts = {}) {
     const a = spin + smoothX * 0.34;
     wanted.set(
       basePos.x * Math.cos(a) - basePos.z * Math.sin(a),
-      basePos.y - smoothY * 6.5,
+      /* Kept small: a big vertical swing would push the roof back out of the
+         frame the framing above was chosen to hold. */
+      basePos.y - smoothY * 3.0,
       basePos.x * Math.sin(a) + basePos.z * Math.cos(a)
     );
     if (snap) camPos.copy(wanted);
