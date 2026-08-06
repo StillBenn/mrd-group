@@ -176,12 +176,22 @@ export async function createBuilding(canvas, opts = {}) {
   let dragging = false;
   let lastDragX = 0;
 
+  /* How far back the rig sits, as a multiple of basePos. Measured by projecting
+     the model AND its cast shadow through this camera across a full rotation:
+     the composition needs at least 0.88 while the frame is wider than ~1.1,
+     and 0.93/aspect once it narrows. A phone-shaped frame (0.62) therefore
+     needs ~1.5 — at 1.0 the building overflowed by 38%, which is why it was
+     cut off on narrow screens. */
+  let fitScale = 1;
+
   function resize() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!w || !h || (w === width && h === height)) return;
     width = w; height = h;
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
+    const aspect = w / h;
+    camera.aspect = aspect;
+    fitScale = Math.min(2.2, Math.max(0.9, 0.95 / aspect));
     camera.updateProjectionMatrix();
   }
 
@@ -218,11 +228,16 @@ export async function createBuilding(canvas, opts = {}) {
   function updateCamera(snap) {
     spin += (spinTarget - spin) * (snap ? 1 : 0.16);
     const a = spin + smoothX * 0.34;
+    /* fitScale pushes the whole rig away from TARGET, so a narrow frame gets a
+       wider view without changing the composition. */
+    const bx = basePos.x * fitScale;
+    const bz = basePos.z * fitScale;
+    const by = TARGET.y + (basePos.y - TARGET.y) * fitScale;
     wanted.set(
-      basePos.x * Math.cos(a) - basePos.z * Math.sin(a),
+      bx * Math.cos(a) - bz * Math.sin(a),
       /* Kept small: the framing budget above was measured with a ±2 m tilt. */
-      basePos.y - smoothY * 2.0,
-      basePos.x * Math.sin(a) + basePos.z * Math.cos(a)
+      by - smoothY * 2.0,
+      bx * Math.sin(a) + bz * Math.cos(a)
     );
     if (snap) camPos.copy(wanted);
     else camPos.lerp(wanted, 0.06);
