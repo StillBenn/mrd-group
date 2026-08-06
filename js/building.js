@@ -20,7 +20,7 @@ const FLOOR_PREFIX = "Floor_";
    ten-minute cache, and a browser that has already stored the old .glb will
    keep drawing it long after the new one is live — which looks exactly like
    "the fix did not work". The query string makes the new model a new URL. */
-const ASSET_VERSION = "3";
+const ASSET_VERSION = "4";
 
 export async function createBuilding(canvas, opts = {}) {
   const THREE = await import("./vendor/three/three.module.min.js");
@@ -31,6 +31,10 @@ export async function createBuilding(canvas, opts = {}) {
     canvas,
     antialias: true,
     alpha: true,
+    /* The scene is composited over the page, and the only thing drawn on the
+       transparent plane is a shadow. With premultiplied alpha that shadow is
+       multiplied away to nothing; turning it off is what lets it show. */
+    premultipliedAlpha: false,
     powerPreference: "high-performance",
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, DPR_CAP));
@@ -69,7 +73,11 @@ export async function createBuilding(canvas, opts = {}) {
   /* A key light on top of the environment, purely for the shadows — an HDR
      alone lights a scene beautifully but casts nothing. */
   const key = new THREE.DirectionalLight(0xfff6e8, 2.2);
-  key.position.set(26, 34, 20);
+  /* Placed behind-right of the model rather than beside the camera: a light
+     sitting over the viewer's shoulder throws its shadow behind the building,
+     where nobody can see it. From here the shadow falls forward-left, into
+     frame, while the faces turned towards the camera stay lit. */
+  key.position.set(30, 36, -18);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   key.shadow.camera.near = 1;
@@ -124,6 +132,20 @@ export async function createBuilding(canvas, opts = {}) {
     }
   });
   scene.add(building);
+
+  /* The building stands on nothing visible. A modelled plinth — disc or slab —
+     always reads as a foreign white shape pasted over the page's own
+     background, and whichever way the canvas crops it, it looks broken. This
+     plane is invisible except where shadow falls on it, so the block appears
+     to stand on the page itself. */
+  const shadowCatcher = new THREE.Mesh(
+    new THREE.PlaneGeometry(400, 400),
+    new THREE.ShadowMaterial({ opacity: 0.38 })
+  );
+  shadowCatcher.rotation.x = -Math.PI / 2;
+  shadowCatcher.position.y = 0;
+  shadowCatcher.receiveShadow = true;
+  scene.add(shadowCatcher);
 
   /* ---- camera ----------------------------------------------------------- */
   /* Framed close so the block fills the canvas — a small model floating in a
