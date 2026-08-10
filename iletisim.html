@@ -100,6 +100,11 @@
 
 <main id="main" class="page">
 
+  <!-- Title, details and map are ONE screen. Locking the wrapper to the
+       viewport keeps the next section (which paints its own flat band) below
+       the fold at every resolution; otherwise the taller the display, the more
+       flat colour sat under the contact block and broke the carved ground. -->
+  <div class="first-screen">
   <section class="hero page-hero hero--compact" data-scene="intro">
     <div class="hero__inner">
       <nav class="breadcrumb" aria-label="Sayfa yolu">
@@ -185,6 +190,7 @@
       </div>
     </div>
   </section>
+  </div><!-- /.first-screen -->
 
   <section class="section section--band" data-scene="close">
     <div class="wrap">

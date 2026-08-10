@@ -474,6 +474,18 @@ body.menu-open .menu {
 .section--tight {
   padding-top: var(--s-7);
 }
+/* One full viewport, at every resolution. The block is centred in whatever
+   height the display has, so the carved ground fills the screen on its own and
+   the next section — the only element here painting a flat band — always
+   starts below the fold. Content taller than the viewport (phones, short
+   laptops) simply grows the wrapper instead of being clipped. */
+.first-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .section--contact {
   padding-top: var(--s-6);
   padding-bottom: var(--s-6);
