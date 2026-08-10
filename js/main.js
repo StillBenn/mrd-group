@@ -999,8 +999,16 @@ async function initStage() {
     chapters.forEach((el, i) => {
       if (i === 0) return;
       ST.create({
-        trigger: el,
-        start: "top bottom",
+        /* The blend has to span the WHOLE distance between two chapters.
+           Anchoring it to the incoming section alone ("top bottom" → "top top")
+           made every transition exactly one viewport long, so the scroll
+           between two far-apart sections was covered by nothing at all and the
+           ground sat frozen while the reader kept scrolling — a quarter of this
+           page behaved that way. Starting at the PREVIOUS chapter and ending at
+           this one leaves no uncovered scroll between them. */
+        trigger: chapters[i - 1],
+        start: "top top",
+        endTrigger: el,
         end: "top top",
         /* A number, not true: ScrollTrigger eases the scrubbed value over ~0.7s
            instead of snapping it to every scroll event. That damping is what
@@ -1060,6 +1068,12 @@ async function initStage() {
     lenis && typeof lenis.progress === "number" && !Number.isNaN(lenis.progress)
       ? lenis.progress
       : window.scrollY / scrollMax;
+  /* The same position in pixels. The relief flow is measured per pixel so it
+     travels at one speed on every page, long or short. */
+  const scrollPixels = () =>
+    lenis && typeof lenis.scroll === "number" && !Number.isNaN(lenis.scroll)
+      ? lenis.scroll
+      : window.scrollY;
 
   /* One ticker for the whole page: the scroll is integrated first, then the
      ground is drawn against the position it just produced. */
@@ -1071,7 +1085,7 @@ async function initStage() {
       last = time;
       if (lenis) lenis.raf(time * 1000);
       if (scene) {
-        scene.setScroll(scrollProgress());
+        scene.setScroll(scrollProgress(), scrollPixels());
         scene.update(time, dt);
       }
     });
@@ -1082,7 +1096,7 @@ async function initStage() {
       last = now;
       if (lenis) lenis.raf(now);
       if (scene) {
-        scene.setScroll(scrollProgress());
+        scene.setScroll(scrollProgress(), scrollPixels());
         scene.update(now / 1000, dt);
       }
       requestAnimationFrame(frame);

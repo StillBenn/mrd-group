@@ -58,6 +58,7 @@ uniform vec3  uColor;     // chapter accent
 uniform float uWarp;
 uniform float uDepth;
 uniform vec3  uPaper;
+uniform float uFlow;      // reading position: the relief travels with the scroll
 
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -101,14 +102,20 @@ float ridged(vec2 p) {
   return h;
 }
 
-/* The carved surface. Warped so the ridges flow instead of running straight. */
+/* The carved surface. Warped so the ridges flow instead of running straight.
+
+   uFlow slides the sampling window with the reading position, so the stone
+   keeps travelling under the page for EVERY pixel of scroll. The chapter blend
+   alone can only move the ground where two chapters meet; between them it has
+   nothing to say, and the surface used to read as locked. This term never
+   stops, so scrolling always moves something. */
 float field(vec2 p) {
   float t = uTime * 0.006;
   vec2 w = vec2(
-    noise(p * 0.85 + vec2(uWarp, t)),
-    noise(p * 0.85 + vec2(t * 0.8, uWarp + 5.2))
+    noise(p * 0.85 + vec2(uWarp, t + uFlow * 0.35)),
+    noise(p * 0.85 + vec2(t * 0.8, uWarp + 5.2 + uFlow * 0.25))
   );
-  return ridged(p * 1.02 + (w - 0.5) * 1.15 + vec2(uWarp, 0.0));
+  return ridged(p * 1.02 + (w - 0.5) * 1.15 + vec2(uWarp, uFlow));
 }
 
 void main() {
@@ -218,7 +225,7 @@ export function createScene(container) {
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
   const u = {};
-  for (const name of ["uRes", "uTime", "uPointer", "uColor", "uWarp", "uDepth", "uPaper"]) {
+  for (const name of ["uRes", "uTime", "uPointer", "uColor", "uWarp", "uDepth", "uPaper", "uFlow"]) {
     u[name] = gl.getUniformLocation(program, name);
   }
 
@@ -280,10 +287,20 @@ export function createScene(container) {
   const lockBaseWarp = locked ? CHAPTERS[sectorKey].warp : 0;
   const LOCK_WARP_SPAN = 1.8; // how far the shape drifts across a sector page
 
+  /* How much scrolling moves the relief by one noise unit.
+
+     Deliberately measured in PIXELS, not in page progress: tying it to progress
+     would make the ground race on a short page and crawl on a long one — the
+     same "it scrolls too fast" complaint the corporate pages already had. Per
+     pixel, the speed is identical everywhere, which is what makes the surface
+     feel attached to the wheel rather than to the document's length. */
+  const FLOW_PIXELS = 2600;
+
   /* Overall document scroll, 0..1, fed from main.js. Drives the shape on
      locked pages so it flows monotonically instead of jumping between the
      per-chapter warps (which were tuned for the homepage order). */
   let scrollP = 0;
+  let scrollPx = 0;
 
   /* On the homepage, hovering a sector row pulls the whole ground to that
      sector's colour and formation; releasing returns it to the scroll state.
@@ -296,6 +313,7 @@ export function createScene(container) {
   const cur = {
     warp: lockBaseWarp,
     depth: 1,
+    flow: 0,
     cr: (lockColor || CHAPTERS.intro.color)[0],
     cg: (lockColor || CHAPTERS.intro.color)[1],
     cb: (lockColor || CHAPTERS.intro.color)[2],
@@ -370,7 +388,16 @@ export function createScene(container) {
     cur.cg = lerp(cur.cg, tCol1, s);
     cur.cb = lerp(cur.cb, tCol2, s);
 
+    /* The relief travels with the reading position on every page. Its own,
+       faster low-pass (~0.25 s against the ~0.8 s above) keeps it attached to
+       the hand: the chapter mood may lag behind a fast scroll on purpose, but
+       the surface itself must answer the wheel immediately or the ground reads
+       as locked. */
+    const sFlow = 1 - Math.pow(0.0008, Math.min(dt, 0.05));
+    cur.flow = lerp(cur.flow, scrollPx / FLOW_PIXELS, sFlow);
+
     gl.uniform1f(u.uTime, time);
+    gl.uniform1f(u.uFlow, cur.flow);
     gl.uniform2f(u.uPointer, pointer.x, pointer.y);
     gl.uniform3f(u.uColor, cur.cr, cur.cg, cur.cb);
     gl.uniform1f(u.uWarp, cur.warp);
@@ -396,10 +423,13 @@ export function createScene(container) {
       return NAMES.indexOf(name);
     },
 
-    /* Overall document scroll progress (0..1); drives the shape on locked
-       sector pages. Harmless on the homepage (ignored there). */
-    setScroll(p) {
+    /* Reading position. `p` is document progress (0..1) and drives the shape on
+       locked sector pages; `px` is the same position in pixels and drives the
+       relief flow on every page, so the flow speed does not depend on how long
+       the page happens to be. */
+    setScroll(p, px) {
       scrollP = p < 0 ? 0 : p > 1 ? 1 : p;
+      if (typeof px === "number" && px >= 0) scrollPx = px;
     },
 
     /* Homepage sector-hover preview; pass a chapter name or null to release. */
