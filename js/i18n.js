@@ -595,8 +595,12 @@
     document.documentElement.setAttribute("lang", lang);
   }
 
+  /* Sayfanın açılış dili İngilizce: siteyi ilk gören ziyaretçi İngilizce
+     karşılanır, Türkçe ve Rusça menüden bir tıkla seçilir. HTML kaynağı
+     Türkçe kalmaya devam eder — çeviri, sayfa açılırken uygulanır. */
+  var DEFAULT_LANG = "en";
   function current() {
-    try { return localStorage.getItem(STORE) || "tr"; } catch (e) { return "tr"; }
+    try { return localStorage.getItem(STORE) || DEFAULT_LANG; } catch (e) { return DEFAULT_LANG; }
   }
   function remember(lang) {
     try { localStorage.setItem(STORE, lang); } catch (e) { /* gizli sekme */ }
