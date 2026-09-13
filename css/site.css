@@ -1779,3 +1779,29 @@ body.has-cursor .frame__canvas.is-grabbing {
   outline: 2px solid var(--c-accent);
   outline-offset: 2px;
 }
+
+/* --- Telefonda dokunma hedefleri -------------------------------------------
+
+   Olculdu (390px, uc ekran yuksekliginde): dil butonlari 30px, altbilgideki
+   marka baglantisi 18px, iletisim sayfasindaki telefon/e-posta baglantilari
+   17-18px yuksekti. Apple ve Google esigi 44px.
+
+   En kritigi iletisim sayfasi: oradaki baglantilar tiklaninca arama baslatiyor
+   ya da e-posta aciyor - isabet ettirilemeyen bir numara, olmayan numaradir.
+
+   Dolgu buyutulmuyor: altbilginin ve tanim listesinin gorunumu aynen kaliyor,
+   yalnizca DOKUNMA ALANI gorunmez bir psodo-elemanla genisliyor. */
+@media (pointer: coarse) {
+  .lang__btn,
+  .site-footer a,
+  .section--contact dd a {
+    position: relative;
+  }
+  .lang__btn::before,
+  .site-footer a::before,
+  .section--contact dd a::before {
+    content: "";
+    position: absolute;
+    inset: -12px -8px;
+  }
+}
