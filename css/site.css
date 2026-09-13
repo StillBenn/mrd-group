@@ -271,16 +271,6 @@ body.is-leaving .page-wipe__logo {
   .page-hero__logo--tall {
     height: 6.4rem;
   }
-  /* The wordmark is a wide lockup, so on a phone its HEIGHT is not what runs
-     out — its width is. At 4rem it pushed the language switch and the menu
-     button off the right edge of a 390px screen. Measured. */
-  .brand__logo,
-  .site-header.is-stuck .brand__logo {
-    height: 2.5rem;
-  }
-  .site-footer .brand__logo {
-    height: 2.8rem;
-  }
 }
 
 .nav {
