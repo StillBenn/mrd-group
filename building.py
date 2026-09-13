@@ -1,5 +1,5 @@
 """
-MRD Group — procedural architecture for the construction page.
+Tarven Group — procedural architecture for the construction page.
 
 Produces `building.glb`: a nine-storey residential block — podium, main shaft,
 cantilevered bay, stepped-back crown, glazed facades and roofscape.

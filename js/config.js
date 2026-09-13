@@ -1,8 +1,11 @@
 /* ==========================================================================
-   MRD Group — Site configuration
+   Tarven Group — Site configuration
    --------------------------------------------------------------------------
-   PLACEHOLDER DATA. Every value below is provisional and must be replaced
-   with the client's real details before the site is presented as final.
+   DEMONSTRATION SITE. Tarven Group is a fictional holding invented for this
+   portfolio piece. Every company name, project name, place name and contact
+   detail below is made up, and the phone numbers sit in ranges that are not
+   assigned to subscribers — nothing here can ring a real person.
+
    Editing this file updates the header, contact band and footer on every
    page at once. The HTML also carries the same values as static fallback
    text, so the contact details stay visible (and crawlable) if JS fails.
@@ -12,20 +15,20 @@ export const SITE = {
   /* Public base URL — used for canonical links and Open Graph tags. */
   baseUrl: "https://stillbenn.github.io/mrd-group/",
 
-  legalName: "MRD Group", // TODO: full registered trade name
-  city: "", // location left blank until the client confirms it
+  legalName: "Tarven Group", // fictional holding, invented for this demo
+  city: "", // left blank on purpose — the demo names no real location
   country: "Türkiye",
 
-  /* Real line published on the client's own site (cizreparkavm.com.tr).
-     WhatsApp stays a placeholder until a real number is supplied. */
-  phoneDisplay: "(0342) 357 04 40",
-  phoneHref: "tel:+903423570440",
+  /* Invented numbers. 0212 000 and 500 000 are not assigned to subscribers,
+     so a visitor who taps them reaches nobody. */
+  phoneDisplay: "(0212) 000 00 00",
+  phoneHref: "tel:+902120000000",
 
-  whatsappDisplay: "+90 538 334 24 10",
-  whatsappHref: "https://wa.me/905383342410",
+  whatsappDisplay: "+90 500 000 00 00",
+  whatsappHref: "https://wa.me/905000000000",
 
-  emailDisplay: "info@mrdgroup.com.tr",
-  emailHref: "mailto:info@mrdgroup.com.tr",
+  emailDisplay: "info@tarvengroup.com",
+  emailHref: "mailto:info@tarvengroup.com",
 
   hours: "Her gün · 09.00 – 17.00",
 };

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MRD Group — Canvas stage
+   Tarven Group — Canvas stage
    --------------------------------------------------------------------------
    The ground is a plaster bas-relief: a procedural height field, lit by a
    lamp that follows the pointer. Moving the mouse sweeps light across the

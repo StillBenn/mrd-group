@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Yönetim Paneli — MRD Group</title>
+<title>Yönetim Paneli — Tarven Group</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#12120f">
 
 <!--
   Standalone admin tool. It lives in /panel/ so the address bar reads
-  ".../mrd-group/panel". Because it is one level below the site root, it uses
+  ".../tarven-group/panel". Because it is one level below the site root, it uses
   repository-root asset paths (like 404.html) and inlines its own styles, so it
   never depends on ../css. It is the ONLY other file besides 404.html allowed
   to use repo-root paths.
@@ -97,13 +97,13 @@
 <div class="wrap">
   <header>
     <div class="brand">
-      <img decoding="async" src="/mrd-group/img/mrd-group.png" alt="MRD Group">
+      <img decoding="async" src="/tarven-group/img/tarven-group.png" alt="Tarven Group">
       <div>
         <b>Yönetim Paneli</b>
         <div class="tag">Demo</div>
       </div>
     </div>
-    <a class="view" href="/mrd-group/" target="_blank" rel="noopener">Siteyi aç →</a>
+    <a class="view" href="/tarven-group/" target="_blank" rel="noopener">Siteyi aç →</a>
   </header>
 
   <div class="note">
@@ -117,7 +117,7 @@
   <p class="sub">Bir sektör seçin, görsel ekleyin. Galeri anında güncellenir.</p>
 
   <div class="tabs" id="tabs">
-    <button class="tab is-active" data-sector="market"><span class="dot"></span>Market · Cizre Park</button>
+    <button class="tab is-active" data-sector="market"><span class="dot"></span>Market · Tarven Park</button>
     <button class="tab" data-sector="insaat"><span class="dot"></span>İnşaat</button>
     <button class="tab" data-sector="enerji"><span class="dot"></span>Enerji</button>
   </div>
@@ -132,12 +132,12 @@
   <div class="grid" id="grid"></div>
 
   <div class="row">
-    <a class="btn" id="viewSector" href="/mrd-group/market.html" target="_blank" rel="noopener">Sektör sayfasında gör →</a>
+    <a class="btn" id="viewSector" href="/tarven-group/market.html" target="_blank" rel="noopener">Sektör sayfasında gör →</a>
     <button class="btn danger" id="clear" type="button">Bu sektörün görsellerini temizle</button>
   </div>
 
   <footer>
-    MRD Group · Yönetim Paneli (demo). Görseller yalnızca bu cihazda saklanır ·
+    Tarven Group · Yönetim Paneli (demo). Görseller yalnızca bu cihazda saklanır ·
     Gerçek yayına alma için içerik yönetim sistemine bağlanacaktır.
   </footer>
 </div>
@@ -226,7 +226,7 @@
     var t = e.target.closest(".tab"); if (!t) return;
     current = t.getAttribute("data-sector");
     [].forEach.call(this.querySelectorAll(".tab"), function (x) { x.classList.toggle("is-active", x === t); });
-    viewSector.href = "/mrd-group/" + sectors[current];
+    viewSector.href = "/tarven-group/" + sectors[current];
     render();
   });
 

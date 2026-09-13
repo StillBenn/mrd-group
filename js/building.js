@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MRD Group — architectural viewer (construction page)
+   Tarven Group — architectural viewer (construction page)
    --------------------------------------------------------------------------
    A nine-storey residential block, modelled procedurally in Blender by
    `building.py`: a wide podium, a main shaft, a cantilevered bay, a crown that

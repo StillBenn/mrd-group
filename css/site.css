@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MRD Group — Components
+   Tarven Group — Components
    --------------------------------------------------------------------------
    Performance rules enforced throughout this file:
      · no backdrop-filter  — it repaints on every scroll frame
@@ -1607,7 +1607,7 @@ body.menu-open .chapter-rail {
   }
 }
 
-/* 16e. Amenities — the real Cizre Park services as a restrained icon grid.
+/* 16e. Amenities — the real Tarven Park services as a restrained icon grid.
    Hairline separators, a single accent per mark; no cards, no fills. */
 .amenities {
   display: grid;
