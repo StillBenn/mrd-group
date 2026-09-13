@@ -86,7 +86,7 @@ export async function createBuilding(canvas, opts = {}) {
   const LIGHT_BASE = new THREE.Vector3(26, 70, -6);
   key.position.copy(LIGHT_BASE);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(1024, 1024); // 2048 dortte bir maliyete indi; PCFSoft ile fark gorunmuyor
   key.shadow.camera.near = 1;
   key.shadow.camera.far = 140;
   key.shadow.camera.left = -34;
@@ -253,6 +253,10 @@ export async function createBuilding(canvas, opts = {}) {
     );
   }
 
+  /* Below this the eased values are visually settled — a sub-pixel camera
+     nudge nobody can see is not worth a full 3D frame. */
+  const SETTLED = 0.0004;
+
   function frame() {
     raf = 0;
     if (!running) return;
@@ -260,7 +264,22 @@ export async function createBuilding(canvas, opts = {}) {
     smoothY += (pointerY - smoothY) * 0.06;
     updateCamera(false);
     draw();
-    raf = requestAnimationFrame(frame);
+
+    /* Idle out instead of burning a frame forever. The easing converges but
+       never arrives, so without this the page kept rendering a shadowed 3D
+       scene at 60fps while the reader sat still — the single biggest cause
+       of the scroll feeling heavy. A pointer move, a drag or a scroll wakes
+       it again through the calls below. */
+    const moving =
+      Math.abs(pointerX - smoothX) > SETTLED ||
+      Math.abs(pointerY - smoothY) > SETTLED ||
+      Math.abs(spinTarget - spin) > SETTLED;
+    if (moving) raf = requestAnimationFrame(frame);
+  }
+
+  /* Ask for one more frame. Cheap to call repeatedly: it never stacks. */
+  function wake() {
+    if (running && !raf) raf = requestAnimationFrame(frame);
   }
 
   resize();
@@ -271,16 +290,21 @@ export async function createBuilding(canvas, opts = {}) {
     floorCount: floors.length,
 
     /* Scroll drives this directly, so it paints synchronously: the storeys
-       must land on the exact frame the scroll reports, not one rAF later. */
+       must land on the exact frame the scroll reports, not one rAF later.
+       Unless the loop is already awake — then it will paint this same frame
+       anyway, and drawing here as well rendered the scene TWICE per frame
+       for the whole length of the scroll. */
     setProgress(p) {
       progress = p < 0 ? 0 : p > 1 ? 1 : p;
       layout();
+      if (raf) return;
       draw();
     },
 
     setPointer(x, y) {
       pointerX = x;
       pointerY = y;
+      wake();
     },
 
     /* Left-button drag turns the building, like a model on a turntable. */
@@ -292,7 +316,9 @@ export async function createBuilding(canvas, opts = {}) {
       if (!dragging) return;
       spinTarget += (clientX - lastDragX) * 0.009;
       lastDragX = clientX;
-      if (!running) {
+      if (running) {
+        wake();
+      } else {
         updateCamera(true);
         draw();
       }
@@ -307,7 +333,7 @@ export async function createBuilding(canvas, opts = {}) {
     start() {
       if (running) return;
       running = true;
-      if (!raf) raf = requestAnimationFrame(frame);
+      wake();
     },
 
     stop() {
