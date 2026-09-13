@@ -1794,12 +1794,14 @@ body.has-cursor .frame__canvas.is-grabbing {
 @media (pointer: coarse) {
   .lang__btn,
   .site-footer a,
-  .section--contact dd a {
+  .section--contact dd a,
+  .breadcrumb a {
     position: relative;
   }
   .lang__btn::before,
   .site-footer a::before,
-  .section--contact dd a::before {
+  .section--contact dd a::before,
+  .breadcrumb a::before {
     content: "";
     position: absolute;
     inset: -12px -8px;
