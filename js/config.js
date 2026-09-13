@@ -13,7 +13,7 @@
 
 export const SITE = {
   /* Public base URL — used for canonical links and Open Graph tags. */
-  baseUrl: "https://stillbenn.github.io/mrd-group/",
+  baseUrl: "https://stillbenn.github.io/tarven-group/",
 
   legalName: "Tarven Group", // fictional holding, invented for this demo
   city: "", // left blank on purpose — the demo names no real location
