@@ -1,6 +1,4 @@
 # Editor / tooling
-.claude/
-CLAUDE.md
 .vscode/
 .idea/
 *.code-workspace
